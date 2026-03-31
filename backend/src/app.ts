@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import globalErrorHandler from './middlewares/globalErrorHandler';
 import notFound from './middlewares/notFound';
+import router from './routes';
 
 const app: Application = express();
 
@@ -12,7 +13,7 @@ app.use(cors());
 app.use(cookieParser()); 
 
 // application routes
-// app.use('/api/v1', router);
+app.use('/api/v1', router);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Hello from Triplance World!');

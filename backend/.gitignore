@@ -1,6 +1,5 @@
 node_modules
 api
-# Keep environment variables out of version control
 .env
 
 generated/prisma
