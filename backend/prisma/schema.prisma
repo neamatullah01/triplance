@@ -1,15 +1,206 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  ADMIN
+  TRAVELER
+  AGENCY
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum PaymentGateway {
+  STRIPE
+  SSLCOMMERZ
+}
+
 model User {
-    id        String   @id @default(uuid())
-    email     String   @unique
-    name      String?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id              String    @id @default(uuid())
+  name            String
+  email           String    @unique
+  password        String    // hashed; optional for social login but kept as required string for now
+  role            Role      @default(TRAVELER)
+  profileImage    String?
+  bio             String?
+  rating          Float     @default(0)
+  isVerified      Boolean   @default(false)
+  isBanned        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  bookings        Booking[]
+  posts           Post[]
+  reviewsWritten  Review[]  @relation("TravelerReviews")
+  reviewsReceived Review[]  @relation("AgencyReviews")
+  packages        Package[]
+  followers       Follow[]  @relation("Following")
+  following       Follow[]  @relation("Followers")
+  likes           Like[]
+  comments        Comment[]
+  payments        Payment[]
+
+  @@map("users")
+}
+
+model Package {
+  id              String      @id @default(uuid())
+  title           String
+  description     String
+  price           Float
+  maxCapacity     Int
+  availableDates  DateTime[]
+  amenities       String[]
+  itinerary       Json        // Storing day-by-day plan as JSON
+  images          String[]
+  destination     String
+  rating          Float       @default(0)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relationships
+  agencyId        String
+  agency          User        @relation(fields: [agencyId], references: [id])
+  bookings        Booking[]
+  reviews         Review[]
+
+  @@map("packages")
+}
+
+model Post {
+  id              String    @id @default(uuid())
+  content         String
+  images          String[]
+  tags            String[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  authorId        String
+  author          User      @relation(fields: [authorId], references: [id])
+  likes           Like[]
+  comments        Comment[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id              String    @id @default(uuid())
+  text            String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  postId          String
+  post            Post      @relation(fields: [postId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@map("comments")
+}
+
+model Like {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+
+  // Relationships
+  postId          String
+  post            Post      @relation(fields: [postId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model Follow {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+
+  // Relationships
+  followerId      String
+  follower        User      @relation("Followers", fields: [followerId], references: [id])
+  followingId     String
+  following       User      @relation("Following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Booking {
+  id                String        @id @default(uuid())
+  status            BookingStatus @default(PENDING)
+  selectedDate      DateTime
+  numberOfTravelers Int
+  totalPrice        Float
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relationships
+  travelerId        String
+  traveler          User          @relation(fields: [travelerId], references: [id])
+  packageId         String
+  package           Package       @relation(fields: [packageId], references: [id])
+  payment           Payment?
+  review            Review?
+
+  @@map("bookings")
+}
+
+model Payment {
+  id              String          @id @default(uuid())
+  amount          Float
+  currency        String          @default("USD")
+  status          PaymentStatus   @default(UNPAID)
+  gateway         PaymentGateway
+  transactionId   String?
+  receiptUrl      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relationships
+  bookingId       String          @unique
+  booking         Booking         @relation(fields: [bookingId], references: [id])
+  travelerId      String
+  traveler        User            @relation(fields: [travelerId], references: [id])
+
+  @@map("payments")
+}
+
+model Review {
+  id              String    @id @default(uuid())
+  rating          Int
+  comment         String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  packageId       String
+  package         Package   @relation(fields: [packageId], references: [id])
+  agencyId        String
+  agency          User      @relation("AgencyReviews", fields: [agencyId], references: [id])
+  travelerId      String
+  traveler        User      @relation("TravelerReviews", fields: [travelerId], references: [id])
+  bookingId       String    @unique
+  booking         Booking   @relation(fields: [bookingId], references: [id])
+
+  @@map("reviews")
 }
