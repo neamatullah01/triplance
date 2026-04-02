@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { AuthRoutes } from '../modules/Auth/auth.route';
 import { UserRoutes } from '../modules/User/user.route';
 import { PostRoutes } from '../modules/Post/post.route';
+import { CommentRoutes } from '../modules/Comment/comment.route';
+import { LikeRoutes } from '../modules/Like/like.route';
 
 type TModuleRoutes = {
   path: string;
@@ -22,6 +24,14 @@ const moduleRoutes: TModuleRoutes[] = [
   {
     path: '/posts',
     route: PostRoutes
+  },
+  {
+    path: '/',
+    route: CommentRoutes
+  },
+  {
+    path: '/',
+    route: LikeRoutes
   }
 ];
 
