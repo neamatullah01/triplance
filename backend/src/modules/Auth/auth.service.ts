@@ -58,8 +58,7 @@ const loginUser = async (payload: TLoginUser) => {
   }
 
   const jwtPayload = {
-    id: user.id,
-    email: user.email,
+    userId: user.id,
     role: user.role,
   };
 
@@ -91,10 +90,10 @@ const loginUser = async (payload: TLoginUser) => {
 const refreshToken = async (token: string) => {
   const decoded = verifyToken(token, config.jwt.refresh_secret as string);
 
-  const { email } = decoded;
+  const { userId } = decoded;
 
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { id: userId },
   });
 
   if (!user) {
@@ -106,8 +105,7 @@ const refreshToken = async (token: string) => {
   }
 
   const jwtPayload = {
-    id: user.id,
-    email: user.email,
+    userId: user.id,
     role: user.role,
   };
 
