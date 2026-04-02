@@ -78,7 +78,7 @@ model Package {
 
   // Relationships
   agencyId        String
-  agency          User        @relation(fields: [agencyId], references: [id])
+  agency          User        @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   bookings        Booking[]
   reviews         Review[]
 
@@ -95,7 +95,7 @@ model Post {
 
   // Relationships
   authorId        String
-  author          User      @relation(fields: [authorId], references: [id])
+  author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   likes           Like[]
   comments        Comment[]
 
@@ -110,9 +110,9 @@ model Comment {
 
   // Relationships
   postId          String
-  post            Post      @relation(fields: [postId], references: [id])
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId          String
-  user            User      @relation(fields: [userId], references: [id])
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("comments")
 }
@@ -123,9 +123,9 @@ model Like {
 
   // Relationships
   postId          String
-  post            Post      @relation(fields: [postId], references: [id])
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId          String
-  user            User      @relation(fields: [userId], references: [id])
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@map("likes")
@@ -137,9 +137,9 @@ model Follow {
 
   // Relationships
   followerId      String
-  follower        User      @relation("Followers", fields: [followerId], references: [id])
+  follower        User      @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
   followingId     String
-  following       User      @relation("Following", fields: [followingId], references: [id])
+  following       User      @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
   @@map("follows")
@@ -156,9 +156,9 @@ model Booking {
 
   // Relationships
   travelerId        String
-  traveler          User          @relation(fields: [travelerId], references: [id])
+  traveler          User          @relation(fields: [travelerId], references: [id], onDelete: Cascade)
   packageId         String
-  package           Package       @relation(fields: [packageId], references: [id])
+  package           Package       @relation(fields: [packageId], references: [id], onDelete: Cascade)
   payment           Payment?
   review            Review?
 
@@ -178,9 +178,9 @@ model Payment {
 
   // Relationships
   bookingId       String          @unique
-  booking         Booking         @relation(fields: [bookingId], references: [id])
+  booking         Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   travelerId      String
-  traveler        User            @relation(fields: [travelerId], references: [id])
+  traveler        User            @relation(fields: [travelerId], references: [id], onDelete: Cascade)
 
   @@map("payments")
 }
@@ -194,13 +194,13 @@ model Review {
 
   // Relationships
   packageId       String
-  package         Package   @relation(fields: [packageId], references: [id])
+  package         Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
   agencyId        String
-  agency          User      @relation("AgencyReviews", fields: [agencyId], references: [id])
+  agency          User      @relation("AgencyReviews", fields: [agencyId], references: [id], onDelete: Cascade)
   travelerId      String
-  traveler        User      @relation("TravelerReviews", fields: [travelerId], references: [id])
+  traveler        User      @relation("TravelerReviews", fields: [travelerId], references: [id], onDelete: Cascade)
   bookingId       String    @unique
-  booking         Booking   @relation(fields: [bookingId], references: [id])
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
 }
