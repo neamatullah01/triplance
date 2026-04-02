@@ -4,10 +4,16 @@ import { prisma } from '../../lib/prisma';
 import { JwtPayload } from 'jsonwebtoken';
 
 const getAllUsers = async (query: any) => {
-  const { page = 1, limit = 10 } = query;
+  const { page = 1, limit = 10, role } = query;
   const skip = (Number(page) - 1) * Number(limit);
 
+  const whereConditions: any = {};
+  if (role) {
+    whereConditions.role = role;
+  }
+
   const users = await prisma.user.findMany({
+    where: whereConditions,
     skip,
     take: Number(limit),
     select: {
@@ -25,7 +31,7 @@ const getAllUsers = async (query: any) => {
     orderBy: { createdAt: 'desc' },
   });
 
-  const total = await prisma.user.count();
+  const total = await prisma.user.count({ where: whereConditions });
 
   return {
     meta: {
@@ -51,6 +57,12 @@ const getUserById = async (id: string) => {
       isVerified: true,
       isBanned: true,
       createdAt: true,
+      _count: {
+        select: {
+          followers: true,
+          packages: true,
+        },
+      },
     },
   });
 
