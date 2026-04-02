@@ -1,6 +1,27 @@
-import { MAX_UPLOAD_SIZE } from '../../constants';
-// import { z } from 'zod';
+import { z } from 'zod';
 
-export const userValidationSchema = {
-    // Add validation schemas here
-    };
+const updateUserValidationSchema = z.object({
+  body: z.object({
+    name: z.string().min(1, 'Name cannot be empty').optional(),
+    profileImage: z.string().url('Invalid URL').optional(),
+    bio: z.string().optional(),
+  }),
+});
+
+const banUserValidationSchema = z.object({
+  body: z.object({
+    isBanned: z.boolean(),
+  }),
+});
+
+const approveAgencyValidationSchema = z.object({
+  body: z.object({
+    isVerified: z.boolean(),
+  }),
+});
+
+export const UserValidation = {
+  updateUserValidationSchema,
+  banUserValidationSchema,
+  approveAgencyValidationSchema,
+};

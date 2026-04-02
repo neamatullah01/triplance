@@ -3,7 +3,7 @@ import { prisma } from '../src/lib/prisma';
 import config from '../src/config';
 
 async function main() {
-  const adminEmail = 'admin@gamil.com'; // using the exact email requested
+  const adminEmail = 'admin@gmail.com'; // using the exact email requested
 
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
