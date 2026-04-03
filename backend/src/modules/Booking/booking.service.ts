@@ -1,0 +1,214 @@
+import httpStatus from 'http-status';
+import { JwtPayload } from 'jsonwebtoken';
+import { BookingStatus, Prisma } from '../../../generated/prisma/client';
+import AppError from '../../errors/AppError';
+import { prisma } from '../../lib/prisma';
+
+const createBookingIntoDB = async (payload: any, user: JwtPayload) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Fetch package
+    const pkg = await tx.package.findUnique({ where: { id: payload.packageId } });
+    if (!pkg) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Package not found');
+    }
+
+    // 2. Check active
+    if (!pkg.isActive) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Package is not active');
+    }
+
+    // 3. Check slots availability
+    if (pkg.maxCapacity < payload.numberOfTravelers) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Not enough slots available for this package');
+    }
+
+    // 4. Date Verification (basic day validation)
+    const selectedDateObj = new Date(payload.selectedDate);
+    const isDateAvailable = pkg.availableDates.some(
+      (availDate) => availDate.toISOString().split('T')[0] === selectedDateObj.toISOString().split('T')[0]
+    );
+
+    if (!isDateAvailable) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'The selected date is not available in the package itinerary dates');
+    }
+
+    // 5. Lock total price
+    const lockedTotalPrice = pkg.price * payload.numberOfTravelers;
+
+    // 6. Create booking
+    const newBooking = await tx.booking.create({
+      data: {
+        travelerId: user.userId,
+        packageId: payload.packageId,
+        selectedDate: selectedDateObj,
+        numberOfTravelers: payload.numberOfTravelers,
+        totalPrice: lockedTotalPrice,
+        status: BookingStatus.PENDING,
+      },
+      include: {
+        package: true,
+      }
+    });
+
+    // 7. Decrement package capacity
+    await tx.package.update({
+      where: { id: pkg.id },
+      data: { maxCapacity: pkg.maxCapacity - payload.numberOfTravelers }
+    });
+
+    return newBooking;
+  });
+};
+
+const getAllBookingsFromDB = async (query: any) => {
+  const { page = 1, limit = 10 } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const bookings = await prisma.booking.findMany({
+    skip,
+    take: Number(limit),
+    orderBy: { createdAt: 'desc' },
+    include: {
+      traveler: { select: { id: true, name: true, email: true } },
+      package: { select: { id: true, title: true, maxCapacity: true } }
+    }
+  });
+
+  const total = await prisma.booking.count();
+
+  return {
+    meta: { page: Number(page), limit: Number(limit), total },
+    data: bookings,
+  };
+};
+
+const getMyBookingsFromDB = async (user: JwtPayload, query: any) => {
+  const { page = 1, limit = 10 } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const bookings = await prisma.booking.findMany({
+    where: { travelerId: user.userId },
+    skip,
+    take: Number(limit),
+    orderBy: { createdAt: 'desc' },
+    include: { package: { select: { id: true, title: true, images: true, destination: true } } }
+  });
+
+  const total = await prisma.booking.count({ where: { travelerId: user.userId } });
+
+  return {
+    meta: { page: Number(page), limit: Number(limit), total },
+    data: bookings,
+  };
+};
+
+const getBookingByIdFromDB = async (id: string, user: JwtPayload) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    include: {
+      package: true,
+      traveler: { select: { id: true, name: true, profileImage: true, email: true } }
+    }
+  });
+
+  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+  // Verify access privileges 
+  if (user.role === 'TRAVELER' && booking.travelerId !== user.userId) {
+    throw new AppError(httpStatus.FORBIDDEN, 'Information belongs to another traveler');
+  }
+
+  if (user.role === 'AGENCY' && booking.package.agencyId !== user.userId) {
+    throw new AppError(httpStatus.FORBIDDEN, 'Information belongs to another agency pipeline');
+  }
+
+  return booking;
+};
+
+const updateBookingStatusIntoDB = async (id: string, status: BookingStatus, user: JwtPayload) => {
+  return await prisma.$transaction(async (tx) => {
+    const booking = await tx.booking.findUnique({
+      where: { id },
+      include: { package: true }
+    });
+
+    if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+    if (user.role === 'AGENCY' && booking.package.agencyId !== user.userId) {
+      throw new AppError(httpStatus.FORBIDDEN, 'Unauthorized to alter this booking');
+    }
+
+    if (booking.status === status) {
+      throw new AppError(httpStatus.BAD_REQUEST, `Booking is already ${status}`);
+    }
+
+    const updatedBooking = await tx.booking.update({
+      where: { id },
+      data: { status }
+    });
+
+    // If new status is CANCELLED, restore slot count
+    if (status === BookingStatus.CANCELLED && booking.status !== BookingStatus.CANCELLED) {
+      await tx.package.update({
+        where: { id: booking.packageId },
+        data: { maxCapacity: booking.package.maxCapacity + booking.numberOfTravelers }
+      });
+    }
+
+    // Conversely, if previously CANCELLED and now restoring to another status, reduce slots again
+    if (booking.status === BookingStatus.CANCELLED && status !== BookingStatus.CANCELLED) {
+       // Check if restoring capacity is possible
+       if (booking.package.maxCapacity < booking.numberOfTravelers) {
+          throw new AppError(httpStatus.BAD_REQUEST, 'Not enough package slots left to restore booking');
+       }
+
+       await tx.package.update({
+          where: { id: booking.packageId },
+          data: { maxCapacity: booking.package.maxCapacity - booking.numberOfTravelers }
+       });
+    }
+
+    return updatedBooking;
+  });
+};
+
+const cancelBookingFromDB = async (id: string, user: JwtPayload) => {
+  return await prisma.$transaction(async (tx) => {
+    const booking = await tx.booking.findUnique({
+      where: { id },
+      include: { package: true }
+    });
+
+    if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+    if (user.role === 'TRAVELER' && booking.travelerId !== user.userId) {
+      throw new AppError(httpStatus.FORBIDDEN, 'You cannot cancel someone else\'s booking');
+    }
+
+    if (booking.status === BookingStatus.CANCELLED) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Booking is already cancelled');
+    }
+
+    const cancelledBooking = await tx.booking.update({
+      where: { id },
+      data: { status: BookingStatus.CANCELLED }
+    });
+
+    // Restore slot capacity
+    await tx.package.update({
+      where: { id: booking.packageId },
+      data: { maxCapacity: booking.package.maxCapacity + booking.numberOfTravelers }
+    });
+
+    return cancelledBooking;
+  });
+};
+
+export const BookingService = {
+  createBookingIntoDB,
+  getAllBookingsFromDB,
+  getMyBookingsFromDB,
+  getBookingByIdFromDB,
+  updateBookingStatusIntoDB,
+  cancelBookingFromDB,
+};
