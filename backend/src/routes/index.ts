@@ -5,6 +5,7 @@ import { PostRoutes } from '../modules/Post/post.route';
 import { CommentRoutes } from '../modules/Comment/comment.route';
 import { LikeRoutes } from '../modules/Like/like.route';
 import { FollowRoutes } from '../modules/Follow/follow.route';
+import { PackageRoutes } from '../modules/Package/package.route';
 
 type TModuleRoutes = {
   path: string;
@@ -37,6 +38,10 @@ const moduleRoutes: TModuleRoutes[] = [
   {
     path: '/',
     route: FollowRoutes
+  },
+  {
+    path: '/packages',
+    route: PackageRoutes
   }
 ];
 
