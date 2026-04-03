@@ -7,6 +7,7 @@ import { LikeRoutes } from '../modules/Like/like.route';
 import { FollowRoutes } from '../modules/Follow/follow.route';
 import { PackageRoutes } from '../modules/Package/package.route';
 import { BookingRoutes } from '../modules/Booking/booking.route';
+import { ReviewRoutes } from '../modules/Review/review.route';
 
 type TModuleRoutes = {
   path: string;
@@ -47,6 +48,10 @@ const moduleRoutes: TModuleRoutes[] = [
   {
     path: '/bookings',
     route: BookingRoutes
+  },
+  {
+    path: '/reviews',
+    route: ReviewRoutes
   }
 ];
 

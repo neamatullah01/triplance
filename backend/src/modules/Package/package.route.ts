@@ -3,6 +3,7 @@ import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
 import { PackageValidation } from './package.validation';
 import { PackageController } from './package.controller';
+import { ReviewController } from '../Review/review.controller';
 
 const router = express.Router();
 
@@ -21,6 +22,11 @@ router.get(
 router.get(
   '/:id',
   PackageController.getPackageById
+);
+
+router.get(
+  '/:id/reviews',
+  ReviewController.getReviewsForPackage
 );
 
 router.patch(
