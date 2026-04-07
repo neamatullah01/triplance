@@ -1,5 +1,9 @@
+import FeedPage from "./feed/page"
+
 const Home = () => {
-  return <div>Home</div>
+  return <>
+  <FeedPage></FeedPage>
+  </>
 }
 
 export default Home

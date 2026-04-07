@@ -5,9 +5,11 @@ import { ReactNode } from "react"
 
 const CommonLayout = async ({ children }: { children: ReactNode }) => {
   return (
-    <div>
+    <div className="flex flex-col h-screen overflow-hidden">
       <Navbar></Navbar>
-      {children}
+      <main className="flex-1 overflow-y-auto">
+        {children}
+      </main>
       {/* <Footer></Footer> */}
     </div>
   )

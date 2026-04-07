@@ -5,6 +5,7 @@ import globalErrorHandler from './middlewares/globalErrorHandler';
 import notFound from './middlewares/notFound';
 import router from './routes';
 
+
 const app: Application = express();
 
 // parsers

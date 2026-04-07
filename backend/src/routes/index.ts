@@ -57,7 +57,7 @@ const moduleRoutes: TModuleRoutes[] = [
   {
     path: '/admin',
     route: AdminRoutes
-  }
+  },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
