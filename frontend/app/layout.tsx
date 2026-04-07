@@ -24,7 +24,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", ibmPlexSans.variable, notoSerifHeading.variable)}
     >
-      <body>
+      <body suppressHydrationWarning={true}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

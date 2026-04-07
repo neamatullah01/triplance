@@ -1,3 +1,4 @@
+import { Navbar } from "@/components/shared/Navbar"
 import { ReactNode } from "react"
 
 // export const dynamic = "force-dynamic";
@@ -5,7 +6,7 @@ import { ReactNode } from "react"
 const CommonLayout = async ({ children }: { children: ReactNode }) => {
   return (
     <div>
-      {/* <Navbar user={user}></Navbar> */}
+      <Navbar></Navbar>
       {children}
       {/* <Footer></Footer> */}
     </div>
