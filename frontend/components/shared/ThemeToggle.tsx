@@ -2,16 +2,26 @@
 
 import React from 'react';
 import styled from 'styled-components';
+import { useTheme } from 'next-themes';
 
 interface ThemeToggleProps {
   size?: string;
 }
 
-const ThemeToggle = ({ size = '12px' }: ThemeToggleProps) => {
+const ThemeToggle = ({ size = '10px' }: ThemeToggleProps) => {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
   return (
     <StyledWrapper>
       <label className="theme-switch" style={{ '--toggle-size': size } as React.CSSProperties}>
-        <input type="checkbox" className="theme-switch__checkbox" />
+        <input
+          type="checkbox"
+          className="theme-switch__checkbox"
+          checked={!isDark}
+          onChange={() => setTheme(isDark ? 'light' : 'dark')}
+          readOnly={false}
+        />
         <div className="theme-switch__container">
           <div className="theme-switch__clouds" />
           <div className="theme-switch__stars-container">
