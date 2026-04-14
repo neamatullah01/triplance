@@ -1,18 +1,67 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PlaneTakeoff } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { loginUser } from "@/services/auth.service";
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Enter a valid email address"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const router = useRouter();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Connect to /api/v1/auth/login
-    console.log("Login attempt:", { email, password });
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      const result = await loginUser(data);
+
+      if (!result?.success) {
+        setError("root", {
+          message: result?.message || "Invalid email or password.",
+        });
+        return;
+      }
+
+      // Navigate to the dashboard or home on successful login
+      router.push("/");
+      router.refresh(); // Refresh state so server components receive new cookies
+    } catch {
+      setError("root", {
+        message: "Something went wrong. Please try again.",
+      });
+    }
   };
+
+  const ErrorIcon = () => (
+    <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path
+        fillRule="evenodd"
+        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
 
   return (
     <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12">
@@ -27,26 +76,92 @@ export function LoginForm() {
       <div className="w-full max-w-[400px]">
         <h2 className="text-xl font-bold text-slate-900 mb-6">Log in to Triplance</h2>
 
-        <form className="space-y-4" onSubmit={handleLogin}>
-          <input
-            type="text"
-            placeholder="Email address or mobile number"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all"
-          />
+        {/* Root / Server Error Banner */}
+        {errors.root && (
+          <div
+            role="alert"
+            className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-600 text-sm rounded-lg px-4 py-3 mb-4"
+          >
+            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {errors.root.message}
+          </div>
+        )}
+
+        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+          {/* Email */}
+          <div>
+            <input
+              id="login-email"
+              type="email"
+              placeholder="Email address"
+              autoComplete="email"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "login-email-error" : undefined}
+              {...register("email")}
+              className={`w-full px-4 py-3.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                errors.email
+                  ? "border-rose-400 focus:ring-rose-400"
+                  : "border-slate-300 focus:ring-indigo-600"
+              }`}
+            />
+            {errors.email && (
+              <p
+                id="login-email-error"
+                role="alert"
+                className="flex items-center gap-1 text-xs text-rose-500 mt-1.5"
+              >
+                <ErrorIcon />
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
+          {/* Password */}
+          <div>
+            <input
+              id="login-password"
+              type="password"
+              placeholder="Password"
+              autoComplete="current-password"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? "login-password-error" : undefined}
+              {...register("password")}
+              className={`w-full px-4 py-3.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                errors.password
+                  ? "border-rose-400 focus:ring-rose-400"
+                  : "border-slate-300 focus:ring-indigo-600"
+              }`}
+            />
+            {errors.password && (
+              <p
+                id="login-password-error"
+                role="alert"
+                className="flex items-center gap-1 text-xs text-rose-500 mt-1.5"
+              >
+                <ErrorIcon />
+                {errors.password.message}
+              </p>
+            )}
+          </div>
+
           <button
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-lg transition-colors mt-2 cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-lg transition-colors mt-2 cursor-pointer flex items-center justify-center gap-2"
           >
-            Log in
+            {isSubmitting && (
+              <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
+            {isSubmitting ? "Logging in…" : "Log in"}
           </button>
         </form>
 

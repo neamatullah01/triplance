@@ -13,8 +13,19 @@ import {
   CheckCircle2,
   Info,
 } from "lucide-react";
+import { useForm } from "react-hook-form";
 
 type Role = "traveler" | "agency";
+
+type SignupFormValues = {
+  name: string;
+  email: string;
+  password: string;
+  confirm: string;
+  agencyName?: string;
+  website?: string;
+  bio?: string;
+};
 
 export function SignupForm() {
   const [role, setRole] = useState<Role>("traveler");
@@ -22,24 +33,22 @@ export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Traveler fields
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<SignupFormValues>();
 
-  // Agency extra fields
-  const [agencyName, setAgencyName] = useState("");
-  const [website, setWebsite] = useState("");
-  const [bio, setBio] = useState("");
+  const password = watch("password", "");
+  const confirm = watch("confirm", "");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     // TODO: POST /api/v1/auth/register with { name, email, password, role }
     setTimeout(() => {
       setIsLoading(false);
-      console.log("Register:", { role, name, email });
+      console.log("Register:", { role, name: data.name, email: data.email });
     }, 1500);
   };
 
@@ -128,7 +137,7 @@ export function SignupForm() {
         </AnimatePresence>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <AnimatePresence mode="wait">
             <motion.div
               key={role}
@@ -146,11 +155,12 @@ export function SignupForm() {
                 <input
                   type="text"
                   placeholder={role === "agency" ? "John Doe (Account Owner)" : "John Doe"}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  {...register("name", { required: "Full name is required" })}
                   className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                 />
+                {errors.name && (
+                  <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>
+                )}
               </div>
 
               {/* Agency Name (agency only) */}
@@ -160,11 +170,14 @@ export function SignupForm() {
                   <input
                     type="text"
                     placeholder="Sunrise Travels Ltd."
-                    value={agencyName}
-                    onChange={(e) => setAgencyName(e.target.value)}
-                    required
+                    {...register("agencyName", {
+                      required: role === "agency" ? "Agency name is required" : false,
+                    })}
                     className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                   />
+                  {errors.agencyName && (
+                    <p className="text-xs text-rose-500 mt-1">{errors.agencyName.message}</p>
+                  )}
                 </div>
               )}
 
@@ -174,11 +187,18 @@ export function SignupForm() {
                 <input
                   type="email"
                   placeholder={role === "agency" ? "agency@example.com" : "you@example.com"}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message: "Enter a valid email address",
+                    },
+                  })}
                   className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                 />
+                {errors.email && (
+                  <p className="text-xs text-rose-500 mt-1">{errors.email.message}</p>
+                )}
               </div>
 
               {/* Agency Website */}
@@ -190,8 +210,7 @@ export function SignupForm() {
                   <input
                     type="url"
                     placeholder="https://sunrisetravels.com"
-                    value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
+                    {...register("website")}
                     className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                   />
                 </div>
@@ -205,8 +224,7 @@ export function SignupForm() {
                   </label>
                   <textarea
                     placeholder="Tell travelers about your agency and specialties..."
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
+                    {...register("bio")}
                     rows={2}
                     className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm resize-none"
                   />
@@ -220,10 +238,10 @@ export function SignupForm() {
                   <input
                     type={showPassword ? "text" : "password"}
                     placeholder="At least 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
+                    {...register("password", {
+                      required: "Password is required",
+                      minLength: { value: 8, message: "Password must be at least 8 characters" },
+                    })}
                     className="w-full pl-4 pr-12 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                   />
                   <button
@@ -234,6 +252,9 @@ export function SignupForm() {
                     {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-xs text-rose-500 mt-1">{errors.password.message}</p>
+                )}
               </div>
 
               {/* Confirm Password */}
@@ -243,9 +264,10 @@ export function SignupForm() {
                   <input
                     type={showConfirm ? "text" : "password"}
                     placeholder="Re-enter your password"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    required
+                    {...register("confirm", {
+                      required: "Please confirm your password",
+                      validate: (value) => value === password || "Passwords do not match",
+                    })}
                     className="w-full pl-4 pr-12 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                   />
                   <button
@@ -262,7 +284,7 @@ export function SignupForm() {
                     {confirm === password ? (
                       <><CheckCircle2 className="h-3.5 w-3.5" /> Passwords match</>
                     ) : (
-                      "Passwords do not match"
+                      errors.confirm?.message ?? "Passwords do not match"
                     )}
                   </p>
                 )}
@@ -281,7 +303,7 @@ export function SignupForm() {
           {/* Submit */}
           <button
             type="submit"
-            disabled={isLoading || (confirm !== password && confirm.length > 0)}
+            disabled={isLoading || (confirm.length > 0 && confirm !== password)}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 cursor-pointer"
           >
             {isLoading ? (
