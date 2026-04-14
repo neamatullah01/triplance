@@ -1,12 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Bell, CircleUser, Menu, PlaneTakeoff } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import { getUser } from "@/services/auth.service";
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await getUser();
+        setUser(userData);
+      } catch (error) {
+        console.error("Failed to fetch user", error);
+      }
+    };
+    
+    fetchUser();
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
@@ -52,23 +67,41 @@ export function Navbar() {
           {/* Desktop Theme Toggle & Action Icons */}
           <div className="hidden lg:flex items-center gap-4">
             <ThemeToggle />
-            <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-              <Bell className="h-5 w-5" />
-            </button>
-            <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-              <CircleUser className="h-6 w-6" />
-            </button>
+            {user ? (
+              <>
+                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                  <Bell className="h-5 w-5" />
+                </button>
+                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                  <CircleUser className="h-6 w-6" />
+                </button>
+              </>
+            ) : (
+              <Link href="/login">
+                <button className="px-8 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-full transition-all shadow-sm hover:shadow-lg hover:shadow-blue-900/60 cursor-pointer">
+                  Login
+                </button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile: ThemeToggle + Notification + Profile icon + Hamburger (left to right) */}
           <div className="flex lg:hidden items-center gap-2">
             <ThemeToggle size="8px" />
-            <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1">
-              <Bell className="h-5 w-5" />
-            </button>
-            <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1">
-              <CircleUser className="h-6 w-6" />
-            </button>
+            {user ? (
+              <>
+                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 cursor-pointer">
+                  <Bell className="h-5 w-5" />
+                </button>
+                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 cursor-pointer">
+                  <CircleUser className="h-6 w-6" />
+                </button>
+              </>
+            ) : (
+              <Link href="/login" className="px-6 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-full transition-all mr-1 shadow-sm hover:shadow-lg hover:shadow-blue-900/60 cursor-pointer">
+                Login
+              </Link>
+            )}
             <button
               className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

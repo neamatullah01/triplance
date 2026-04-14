@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PlaneTakeoff } from "lucide-react";
+import { CloudCog, PlaneTakeoff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "sonner";
 import { loginUser } from "@/services/auth.service";
 
 const loginSchema = z.object({
@@ -37,19 +38,25 @@ export function LoginForm() {
       const result = await loginUser(data);
 
       if (!result?.success) {
+        const errorMsg = result?.message || "Invalid email or password.";
         setError("root", {
-          message: result?.message || "Invalid email or password.",
+          message: errorMsg,
         });
+        toast.error(errorMsg);
         return;
       }
 
+      toast.success("Successfully logged in!");
+      
       // Navigate to the dashboard or home on successful login
       router.push("/");
       router.refresh(); // Refresh state so server components receive new cookies
     } catch {
+      const fallbackError = "Something went wrong. Please try again.";
       setError("root", {
-        message: "Something went wrong. Please try again.",
+        message: fallbackError,
       });
+      toast.error(fallbackError);
     }
   };
 
