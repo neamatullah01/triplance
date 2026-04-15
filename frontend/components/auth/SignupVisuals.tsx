@@ -113,7 +113,7 @@ export function SignupVisuals() {
           className="absolute right-[14%] bottom-[4%] w-[16%] aspect-square rounded-full overflow-hidden shadow-xl border-4 border-white z-30"
         >
           <img
-            src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&q=80"
+            src="https://us.123rf.com/450wm/engy14/engy142306/engy14230600167/206643105-young-man-with-backpack-taking-selfie-portrait-outside-smiling-happy-guy-enjoying-summer-holidays.jpg?ver=6"
             alt="Traveler"
             className="w-full h-full object-cover"
           />

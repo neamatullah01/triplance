@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PlaneTakeoff,
@@ -14,8 +15,10 @@ import {
   Info,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { createUser } from "@/services/auth.service";
 
-type Role = "traveler" | "agency";
+type Role = "TRAVELER" | "AGENCY";
 
 type SignupFormValues = {
   name: string;
@@ -28,7 +31,8 @@ type SignupFormValues = {
 };
 
 export function SignupForm() {
-  const [role, setRole] = useState<Role>("traveler");
+  const router = useRouter();
+  const [role, setRole] = useState<Role>("TRAVELER");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -45,11 +49,38 @@ export function SignupForm() {
 
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
-    // TODO: POST /api/v1/auth/register with { name, email, password, role }
-    setTimeout(() => {
+    
+    try {
+      const payload = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: role,
+        ...(role === "AGENCY" && {
+          agencyName: data.agencyName,
+          website: data.website,
+          bio: data.bio,
+        }),
+      };
+
+      const result = await createUser(payload);
+
+      if (result?.success) {
+        toast.success("Account created successfully!");
+        if (role === "TRAVELER") {
+          router.push("/");
+          router.refresh();
+        } else {
+          router.push("/agency-approval");
+        }
+      } else {
+        toast.error(result?.message || "Registration failed. Please try again.");
+      }
+    } catch (error) {
+      toast.error("Something went wrong during registration.");
+    } finally {
       setIsLoading(false);
-      console.log("Register:", { role, name: data.name, email: data.email });
-    }, 1500);
+    }
   };
 
   const tabVariants = {
@@ -88,9 +119,9 @@ export function SignupForm() {
         <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
           <button
             type="button"
-            onClick={() => setRole("traveler")}
+            onClick={() => setRole("TRAVELER")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-              role === "traveler"
+              role === "TRAVELER"
                 ? "bg-white text-indigo-700 shadow-sm"
                 : "text-slate-500 hover:text-slate-700"
             }`}
@@ -100,9 +131,9 @@ export function SignupForm() {
           </button>
           <button
             type="button"
-            onClick={() => setRole("agency")}
+            onClick={() => setRole("AGENCY")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-              role === "agency"
+              role === "AGENCY"
                 ? "bg-white text-indigo-700 shadow-sm"
                 : "text-slate-500 hover:text-slate-700"
             }`}
@@ -114,7 +145,7 @@ export function SignupForm() {
 
         {/* Agency Approval Notice */}
         <AnimatePresence mode="wait">
-          {role === "agency" && (
+          {role === "AGENCY" && (
             <motion.div
               key="agency-notice"
               initial={{ opacity: 0, height: 0 }}
@@ -150,11 +181,11 @@ export function SignupForm() {
               {/* Common: Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  {role === "agency" ? "Your Full Name" : "Full Name"}
+                  {role === "AGENCY" ? "Your Full Name" : "Full Name"}
                 </label>
                 <input
                   type="text"
-                  placeholder={role === "agency" ? "John Doe (Account Owner)" : "John Doe"}
+                  placeholder={role === "AGENCY" ? "John Doe (Account Owner)" : "John Doe"}
                   {...register("name", { required: "Full name is required" })}
                   className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                 />
@@ -164,14 +195,14 @@ export function SignupForm() {
               </div>
 
               {/* Agency Name (agency only) */}
-              {role === "agency" && (
+              {role === "AGENCY" && (
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Agency Name</label>
                   <input
                     type="text"
                     placeholder="Sunrise Travels Ltd."
                     {...register("agencyName", {
-                      required: role === "agency" ? "Agency name is required" : false,
+                      required: role === "AGENCY" ? "Agency name is required" : false,
                     })}
                     className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm shadow-sm"
                   />
@@ -186,7 +217,7 @@ export function SignupForm() {
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Email Address</label>
                 <input
                   type="email"
-                  placeholder={role === "agency" ? "agency@example.com" : "you@example.com"}
+                  placeholder={role === "AGENCY" ? "agency@example.com" : "you@example.com"}
                   {...register("email", {
                     required: "Email is required",
                     pattern: {
@@ -202,7 +233,7 @@ export function SignupForm() {
               </div>
 
               {/* Agency Website */}
-              {role === "agency" && (
+              {role === "AGENCY" && (
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Website <span className="text-slate-400 font-medium">(optional)</span>
@@ -217,7 +248,7 @@ export function SignupForm() {
               )}
 
               {/* Agency Bio */}
-              {role === "agency" && (
+              {role === "AGENCY" && (
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Agency Bio <span className="text-slate-400 font-medium">(optional)</span>
@@ -309,7 +340,7 @@ export function SignupForm() {
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              role === "agency" ? "Submit Agency Application" : "Create Account"
+              role === "AGENCY" ? "Submit Agency Application" : "Create Account"
             )}
           </button>
         </form>

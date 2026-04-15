@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Bell, CircleUser, Menu, PlaneTakeoff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Bell, CircleUser, Menu, PlaneTakeoff, LogOut, User as UserIcon } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
-import { getUser } from "@/services/auth.service";
+import { getUser, logoutUser } from "@/services/auth.service";
 
 export function Navbar() {
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setUser(null);
+    router.push("/login");
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -69,12 +77,35 @@ export function Navbar() {
             <ThemeToggle />
             {user ? (
               <>
-                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer p-1">
                   <Bell className="h-5 w-5" />
                 </button>
-                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-                  <CircleUser className="h-6 w-6" />
-                </button>
+                <div className="relative group">
+                  <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors flex items-center cursor-pointer p-1">
+                    <CircleUser className="h-6 w-6" />
+                  </button>
+                  <div className="absolute right-0 top-full pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name || "User"}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
+                      </div>
+                      <div className="py-2">
+                        <Link href={`/${user?.role === 'AGENCY' ? 'agency' : 'profile'}`} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                          <UserIcon className="h-4 w-4" />
+                          My Profile
+                        </Link>
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors cursor-pointer"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             ) : (
               <Link href="/login">
@@ -93,9 +124,32 @@ export function Navbar() {
                 <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 cursor-pointer">
                   <Bell className="h-5 w-5" />
                 </button>
-                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 cursor-pointer">
-                  <CircleUser className="h-6 w-6" />
-                </button>
+                <div className="relative group">
+                  <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 flex items-center cursor-pointer">
+                    <CircleUser className="h-6 w-6" />
+                  </button>
+                  <div className="absolute right-0 top-full pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name || "User"}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
+                      </div>
+                      <div className="py-2">
+                        <Link href={`/${user?.role === 'AGENCY' ? 'agency' : 'profile'}`} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                          <UserIcon className="h-4 w-4" />
+                          My Profile
+                        </Link>
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors cursor-pointer"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             ) : (
               <Link href="/login" className="px-6 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-full transition-all mr-1 shadow-sm hover:shadow-lg hover:shadow-blue-900/60 cursor-pointer">
