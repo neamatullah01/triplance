@@ -1,95 +1,215 @@
 {
   "info": {
-    "name": "Triplance API",
-    "description": "Postman collection with pre/post scripts for Triplance backend APIs",
+    "name": "Triplance API - Full Collection",
+    "description": "Complete automated Postman collection for all Triplance backend APIs. Tokens are auto-saved, IDs are auto-captured from responses.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
     "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{accessToken}}",
-        "type": "string"
-      }
-    ]
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
   },
-  "item": [
+  "event": [
     {
-      "name": "Auth",
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": ["// Collection-level pre-request: nothing global needed here"]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-level test: log status for every request",
+          "console.log('Response Status:', pm.response.status, '| Time:', pm.response.responseTime + 'ms');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:5000",  "type": "string" },
+    { "key": "accessToken",  "value": "",                       "type": "string" },
+    { "key": "refreshToken", "value": "",                       "type": "string" },
+    { "key": "userId",       "value": "",                       "type": "string" },
+    { "key": "agencyId",     "value": "",                       "type": "string" },
+    { "key": "adminToken",   "value": "",                       "type": "string" },
+    { "key": "agencyToken",  "value": "",                       "type": "string" },
+    { "key": "postId",       "value": "",                       "type": "string" },
+    { "key": "packageId",    "value": "",                       "type": "string" },
+    { "key": "bookingId",    "value": "",                       "type": "string" },
+    { "key": "reviewId",     "value": "",                       "type": "string" },
+    { "key": "commentId",    "value": "",                       "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 Auth",
       "item": [
         {
-          "name": "Register User",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"TRAVELER\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "register"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Login User",
+          "name": "Register Traveler",
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "var jsonData = pm.response.json();",
-                  "if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
-                  "    pm.environment.set(\"accessToken\", jsonData.data.accessToken);",
-                  "    console.log(\"Access Token has been set!\");",
-                  "}"
-                ],
-                "type": "text/javascript"
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test('Response has success=true', () => pm.expect(res.success).to.be.true);",
+                  "if (res.data && res.data.id) pm.environment.set('userId', res.data.id);",
+                  "console.log('Registered userId:', pm.environment.get('userId'));"
+                ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"name\": \"Test Traveler\",\n  \"email\": \"traveler@test.com\",\n  \"password\": \"password123\",\n  \"role\": \"TRAVELER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Agency",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.environment.set('agencyId', res.data.id);",
+                  "console.log('Registered agencyId:', pm.environment.get('agencyId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Agency\",\n  \"email\": \"agency@test.com\",\n  \"password\": \"password123\",\n  \"role\": \"AGENCY\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login as Traveler",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has accessToken', () => pm.expect(res.data).to.have.property('accessToken'));",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.environment.set('accessToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('accessToken', res.data.accessToken);",
+                  "  console.log('Traveler accessToken set!');",
+                  "}",
+                  "if (res.data && res.data.refreshToken) {",
+                  "  pm.environment.set('refreshToken', res.data.refreshToken);",
+                  "  pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"traveler@test.com\",\n  \"password\": \"password123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "login"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Login as Agency",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.environment.set('agencyToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('agencyToken', res.data.accessToken);",
+                  "  console.log('Agency token saved!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"agency@test.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login as Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.environment.set('adminToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('adminToken', res.data.accessToken);",
+                  "  console.log('Admin token saved!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@triplance.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
         },
         {
           "name": "Refresh Token",
@@ -97,227 +217,1036 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "var jsonData = pm.response.json();",
-                  "if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
-                  "    pm.environment.set(\"accessToken\", jsonData.data.accessToken);",
-                  "    console.log(\"Access Token has been refreshed and set!\");",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.environment.set('accessToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('accessToken', res.data.accessToken);",
+                  "  console.log('Access token refreshed!');",
                   "}"
-                ],
-                "type": "text/javascript"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh-token"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👤 Users",
+      "item": [
+        {
+          "name": "Get All Users (Admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + pm.collectionVariables.get('adminToken') });"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Returns array or paginated data', () => pm.expect(res).to.have.property('data'));",
+                  "if (res.data && res.data.length > 0) {",
+                  "  pm.collectionVariables.set('userId', res.data[0].id);",
+                  "  console.log('First userId captured:', res.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Get User By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has user id', () => pm.expect(res.data).to.have.property('id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile (Self)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Name updated', () => pm.expect(res.data.name).to.exist);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Traveler Name\",\n  \"bio\": \"Love exploring new places!\",\n  \"profileImage\": \"https://example.com/avatar.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Ban User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"isBanned\": true\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/ban",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}", "ban"]
+            }
+          }
+        },
+        {
+          "name": "Approve Agency (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"isVerified\": true\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{agencyId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{agencyId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Delete User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/ENTER_USER_ID_TO_DELETE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "ENTER_USER_ID_TO_DELETE"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📦 Packages",
+      "item": [
+        {
+          "name": "Create Package (Agency)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has package id', () => pm.expect(res.data).to.have.property('id'));",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('packageId', res.data.id);",
+                  "  pm.environment.set('packageId', res.data.id);",
+                  "  console.log('packageId saved:', res.data.id);",
+                  "}"
+                ]
               }
             }
           ],
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/refresh-token",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "refresh-token"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "item": [
-        {
-          "name": "Get All Users",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get User By ID",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/users/:id",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                ":id"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "ENTER_USER_ID"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update User Profile",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{agencyToken}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Profile Name\",\n  \"bio\": \"This is my updated bio\"\n}"
+              "raw": "{\n  \"title\": \"Cox's Bazar Beach Tour\",\n  \"description\": \"5 days 4 nights at Cox's Bazar with hotel & meals.\",\n  \"price\": 12500,\n  \"maxCapacity\": 20,\n  \"destination\": \"Cox's Bazar, Bangladesh\",\n  \"availableDates\": [\n    \"2026-05-10T00:00:00.000Z\",\n    \"2026-06-15T00:00:00.000Z\",\n    \"2026-07-20T00:00:00.000Z\"\n  ],\n  \"amenities\": [\"Hotel\", \"Breakfast\", \"Transport\", \"Guide\"],\n  \"images\": [\n    \"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Image_created_with_a_mobile_phone.png/1200px-Image_created_with_a_mobile_phone.png\"\n  ],\n  \"itinerary\": [\n    { \"day\": 1, \"activity\": \"Arrival and hotel check-in\" },\n    { \"day\": 2, \"activity\": \"Beach visit and water sports\" },\n    { \"day\": 3, \"activity\": \"City tour and local market\" },\n    { \"day\": 4, \"activity\": \"Sunset cruise\" },\n    { \"day\": 5, \"activity\": \"Checkout and departure\" }\n  ]\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/users/:id",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                ":id"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "ENTER_USER_ID"
-                }
+              "raw": "{{baseUrl}}/api/v1/packages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "packages"]
+            }
+          }
+        },
+        {
+          "name": "Get All Packages",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(res.data).to.be.an('array').or.to.exist);",
+                  "if (res.data && res.data.data && res.data.data.length > 0) {",
+                  "  pm.collectionVariables.set('packageId', res.data.data[0].id);",
+                  "  console.log('First packageId captured:', res.data.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/packages?page=1&limit=10&destination=Cox",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "packages"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "destination", "value": "Cox", "disabled": true }
               ]
             }
           }
         },
         {
-          "name": "Delete User",
+          "name": "Get Package By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has package title', () => pm.expect(res.data).to.have.property('title'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/packages/{{packageId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "packages", "{{packageId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Package (Agency)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{agencyToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cox's Bazar Premium Tour\",\n  \"price\": 15000,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/packages/{{packageId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "packages", "{{packageId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Package Reviews",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/packages/{{packageId}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "packages", "{{packageId}}", "reviews"]
+            }
+          }
+        },
+        {
+          "name": "Delete Package (Agency/Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{agencyToken}}" }],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/users/:id",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                ":id"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "ENTER_USER_ID"
-                }
-              ]
+              "raw": "{{baseUrl}}/api/v1/packages/ENTER_PACKAGE_ID_TO_DELETE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "packages", "ENTER_PACKAGE_ID_TO_DELETE"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📝 Posts",
+      "item": [
+        {
+          "name": "Create Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('postId', res.data.id);",
+                  "  pm.environment.set('postId', res.data.id);",
+                  "  console.log('postId saved:', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Just got back from Cox's Bazar! What a beautiful place. Highly recommend the sunrise view.\",\n  \"images\": [\"https://example.com/beach.jpg\"],\n  \"tags\": [\"travel\", \"beach\", \"bangladesh\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts"]
             }
           }
         },
         {
-          "name": "Ban User",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "name": "Get All Posts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.data && res.data.data.length > 0) {",
+                  "  pm.collectionVariables.set('postId', res.data.data[0].id);",
+                  "  console.log('First postId captured:', res.data.data[0].id);",
+                  "}"
+                ]
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"isBanned\": true\n}"
-            },
+            }
+          ],
+          "request": {
+            "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/users/:id/ban",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                ":id",
-                "ban"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "ENTER_USER_ID"
-                }
-              ]
+              "raw": "{{baseUrl}}/api/v1/posts?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
             }
           }
         },
         {
-          "name": "Approve Agency",
+          "name": "Get Post By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts", "{{postId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated: Cox's Bazar is absolutely stunning! The water is crystal clear.\",\n  \"tags\": [\"travel\", \"beach\", \"updated\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts", "{{postId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts", "{{postId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "💬 Comments",
+      "item": [
+        {
+          "name": "Add Comment to Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('commentId', res.data.id);",
+                  "  pm.environment.set('commentId', res.data.id);",
+                  "  console.log('commentId saved:', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Amazing post! I had the same experience there last summer.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts", "{{postId}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Get Comments for Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts", "{{postId}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "comments", "{{commentId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "❤️ Likes",
+      "item": [
+        {
+          "name": "Like a Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 or 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "console.log('Like response:', pm.response.json());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{postId}}/likes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts", "{{postId}}", "likes"]
+            }
+          }
+        },
+        {
+          "name": "Unlike a Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{postId}}/likes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "posts", "{{postId}}", "likes"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👥 Follow",
+      "item": [
+        {
+          "name": "Follow a User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "console.log('Follow response:', pm.response.json());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{agencyId}}/follow",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{agencyId}}", "follow"]
+            }
+          }
+        },
+        {
+          "name": "Unfollow a User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{agencyId}}/follow",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{agencyId}}", "follow"]
+            }
+          }
+        },
+        {
+          "name": "Get Followers of User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{agencyId}}/followers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{agencyId}}", "followers"]
+            }
+          }
+        },
+        {
+          "name": "Get Following of User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/following",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}", "following"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🗓️ Bookings",
+      "item": [
+        {
+          "name": "Create Booking (Traveler)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Ensure packageId is set before booking",
+                  "const pkgId = pm.collectionVariables.get('packageId');",
+                  "if (!pkgId) console.warn('⚠️ packageId is not set! Run Create Package first.');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has booking id', () => pm.expect(res.data).to.have.property('id'));",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('bookingId', res.data.id);",
+                  "  pm.environment.set('bookingId', res.data.id);",
+                  "  console.log('bookingId saved:', res.data.id);",
+                  "}",
+                  "pm.test('Status is PENDING', () => pm.expect(res.data.status).to.eql('PENDING'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageId\": \"{{packageId}}\",\n  \"selectedDate\": \"2026-05-10T00:00:00.000Z\",\n  \"numberOfTravelers\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Get All Bookings (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has meta pagination', () => pm.expect(res.data).to.have.property('meta'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Get My Bookings (Traveler)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.data && res.data.data.length > 0) {",
+                  "  pm.collectionVariables.set('bookingId', res.data.data[0].id);",
+                  "  console.log('bookingId from my bookings:', res.data.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "my"]
+            }
+          }
+        },
+        {
+          "name": "Get Booking By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Has totalPrice', () => pm.expect(res.data).to.have.property('totalPrice'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Booking Status (Agency/Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Status updated to CONFIRMED', () => pm.expect(res.data.status).to.eql('CONFIRMED'));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PATCH",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{agencyToken}}" }
             ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"CONFIRMED\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "{{bookingId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking (Traveler/Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Booking is CANCELLED', () => pm.expect(res.data.status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "{{bookingId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⭐ Reviews",
+      "item": [
+        {
+          "name": "Create Review (Traveler)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const bId = pm.collectionVariables.get('bookingId');",
+                  "if (!bId) console.warn('⚠️ bookingId is not set! Run Create Booking first.');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('reviewId', res.data.id);",
+                  "  pm.environment.set('reviewId', res.data.id);",
+                  "  console.log('reviewId saved:', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"isVerified\": true\n}"
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"rating\": 5,\n  \"comment\": \"Absolutely fantastic experience! The agency was very professional and the tour was well-organized.\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/users/:id/approve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                ":id",
-                "approve"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "ENTER_USER_ID"
-                }
-              ]
+              "raw": "{{baseUrl}}/api/v1/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews"]
+            }
+          }
+        },
+        {
+          "name": "Get All Reviews (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews"]
+            }
+          }
+        },
+        {
+          "name": "Delete Review (Traveler/Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews/{{reviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews", "{{reviewId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🛡️ Admin",
+      "item": [
+        {
+          "name": "Get Platform Stats (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "console.log('Platform Stats:', JSON.stringify(res.data, null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "stats"]
             }
           }
         }
       ]
     }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5000",
-      "type": "string"
-    },
-    {
-      "key": "accessToken",
-      "value": "",
-      "type": "string"
-    }
+
   ]
 }

@@ -13,6 +13,12 @@ router.post(
   PostController.createPost
 );
 
+router.get(
+  '/feed',
+  auth('TRAVELER', 'AGENCY', 'ADMIN'),
+  PostController.getAllFeedPost
+);
+
 router.get('/', PostController.getAllPosts);
 
 router.get('/:id', PostController.getPostById);

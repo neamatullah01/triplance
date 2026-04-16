@@ -60,7 +60,9 @@ const getUserById = async (id: string) => {
       _count: {
         select: {
           followers: true,
+          following: true,
           packages: true,
+          posts: true,
         },
       },
     },

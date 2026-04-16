@@ -26,6 +26,18 @@ const getAllPosts = catchAsync(async (req, res) => {
   });
 });
 
+const getAllFeedPost = catchAsync(async (req, res) => {
+  const result = await PostService.getAllFeedPost(req.user, req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Feed retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 const getPostById = catchAsync(async (req, res) => {
   const id = req.params.id as string;
   const result = await PostService.getPostById(id);
@@ -68,4 +80,5 @@ export const PostController = {
   getPostById,
   updatePost,
   deletePost,
+  getAllFeedPost,
 };

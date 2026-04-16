@@ -33,9 +33,34 @@ const registerUser = async (payload: any) => {
     },
   });
 
-  // Exclude password from the response
-  const { password: _, ...userWithoutPassword } = newUser;
-  return userWithoutPassword;
+  const jwtPayload = {
+    userId: newUser.id,
+    role: newUser.role,
+  };
+
+  const accessToken = createToken(
+    jwtPayload,
+    config.jwt.access_secret as string,
+    config.jwt.access_expires_in as string
+  );
+
+  const refreshToken = createToken(
+    jwtPayload,
+    config.jwt.refresh_secret as string,
+    config.jwt.refresh_expires_in as string
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      profileImage: newUser.profileImage,
+    },
+  };
 };
 
 const loginUser = async (payload: TLoginUser) => {

@@ -33,19 +33,26 @@ enum PaymentGateway {
 
 model User {
   id              String    @id @default(uuid())
-  name            String
+  name            String    // Used for "Your Full Name" (The account owner)
   email           String    @unique
-  password        String    // hashed; optional for social login but kept as required string for now
+  password        String    
   role            Role      @default(TRAVELER)
   profileImage    String?
-  bio             String?
+  bio             String?   // Maps perfectly to "Agency Bio (optional)"
+  
+  agencyName      String?   // Maps to "Agency Name"
+  website         String?   // Maps to "Website (optional)"
+
   rating          Float     @default(0)
-  isVerified      Boolean   @default(false)
+  
+  // Note: Your existing isVerified field is perfect for that 
+  // "Approval Required" banner shown in your UI!
+  isVerified      Boolean   @default(false) 
   isBanned        Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relationships
+  // Relationships (No changes needed here)
   bookings        Booking[]
   posts           Post[]
   reviewsWritten  Review[]  @relation("TravelerReviews")
@@ -90,6 +97,8 @@ model Post {
   content         String
   images          String[]
   tags            String[]
+  location        String?
+  agencyName      String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
