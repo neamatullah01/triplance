@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { Plus, X, MapPin, Tag, Building2, UploadCloud, Loader2, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { createPost } from "@/services/post.service";
 
 export function CreatePostModal() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState("");
   const [location, setLocation] = useState("");
@@ -157,6 +159,8 @@ export function CreatePostModal() {
       if (result && result.success) {
         toast.success("Post created successfully!");
         handleClose();
+        router.refresh(); // Refreshes server components (like Sidebar counts)
+        window.dispatchEvent(new CustomEvent("refreshMainFeed")); // Dynamically refreshes the client feed
       } else {
          throw new Error(result?.message || "Failed to create post. Please try again.");
       }

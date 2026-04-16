@@ -94,7 +94,7 @@ export const getUser = async () => {
           headers: {
             "Authorization": `Bearer ${token}`
           },
-          cache: "no-cache"
+          next: { tags: [`user-${decodedData.userId}`] }
         });
         const result = await res.json();
         if (result.success) {
