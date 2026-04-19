@@ -111,6 +111,23 @@ export const getUser = async () => {
   }
 };
 
+export const getSuggestedUsers = async () => {
+  const storeCookie = await cookies();
+  const token = storeCookie.get("token")?.value;
+  try {
+    const res = await fetch(`${env.API_URL}/users/suggestions`, {
+      method: "GET",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      next: { revalidate: 3600 }
+    });
+    const result = await res.json();
+    return result.success ? result.data : [];
+  } catch (error) {
+    console.error("Error fetching suggested users:", error);
+    return [];
+  }
+};
+
 export const logoutUser = async () => {
   const storeCookie = await cookies();
   storeCookie.delete("token");

@@ -3,6 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, CheckCircle2, Loader2, MapPin, ArrowUp } from "lucide-react";
 import { getFeedPost } from "@/services/post.service";
+import { getUser } from "@/services/auth.service";
+import { getFollowing } from "@/services/follow.service";
+import { FollowButton } from "@/components/shared/FollowButton";
+import Link from "next/link";
 
 export function MainFeed() {
   const [feedItems, setFeedItems] = useState<any[]>([]);
@@ -10,6 +14,7 @@ export function MainFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [following, setFollowing] = useState<Set<string>>(new Set());
   
   const observerTarget = useRef(null);
 
@@ -114,6 +119,22 @@ export function MainFeed() {
     }
   }, []); 
 
+  // Load Initial Following List
+  useEffect(() => {
+    async function loadFollowingList() {
+      try {
+        const user = await getUser();
+        if (user?.id) {
+          const list = await getFollowing(user.id);
+          setFollowing(new Set(list.map((f: any) => f.followingId)));
+        }
+      } catch (error) {
+        // silently ignore error
+      }
+    }
+    loadFollowingList();
+  }, []);
+
   // Global Event Listener for New Posts
   useEffect(() => {
     const handleRemoteRefresh = () => {
@@ -186,9 +207,25 @@ export function MainFeed() {
                     <p className="text-xs text-slate-500 dark:text-slate-400">Agency Spotlight • Sponsored</p>
                   </div>
                 </div>
-                <button className="px-4 py-1.5 bg-indigo-900 dark:bg-indigo-800 text-white text-xs font-semibold rounded-full hover:bg-indigo-800 transition-colors">
-                  Follow
-                </button>
+                {item.author?.id && following.has(item.author.id) ? (
+                  <Link href={`/agencies/${item.author.id}`}>
+                    <button className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                      View
+                    </button>
+                  </Link>
+                ) : (
+                  <FollowButton 
+                    targetUserId={item.author?.id}
+                    initialIsFollowing={false}
+                    variant="pill"
+                    targetUserName={item.author?.name}
+                    onFollowChange={(isNowFollowing) => {
+                      if (isNowFollowing && item.author?.id) {
+                        setFollowing(prev => new Set(prev).add(item.author.id));
+                      }
+                    }}
+                  />
+                )}
               </div>
 
               {/* Dynamic Gridded Image Output based on array length */}
