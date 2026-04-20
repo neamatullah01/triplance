@@ -19,3 +19,19 @@ export const getPackages = async (page: number = 1, limit: number = 10, destinat
     return { success: false, message: error.message || "Failed to fetch packages" };
   }
 };
+
+export const getPackageById = async (id: string) => {
+  try {
+    const res = await fetch(`${env.API_URL}/packages/${id}`, {
+      method: "GET",
+      next: { tags: [`package-${id}`] },
+      cache: "no-store",
+    });
+
+    const result = await res.json();
+    return result;
+  } catch (error: any) {
+    console.error("Error fetching package:", error);
+    return { success: false, message: error.message || "Failed to fetch package" };
+  }
+};
