@@ -12,6 +12,7 @@ const createPackageValidationSchema = z.object({
     itinerary: z.any(),
     images: z.array(z.string().url()).nonempty('At least one image URL must be provided'),
     destination: z.string().min(1, 'Destination is required'),
+    lastBookingDay: z.string().datetime({ message: 'lastBookingDay must be a valid ISO datetime' }).optional(),
   }),
 });
 
@@ -26,7 +27,8 @@ const updatePackageValidationSchema = z.object({
     itinerary: z.any().optional(),
     images: z.array(z.string().url()).optional(),
     destination: z.string().optional(),
-    isActive: z.boolean().optional()
+    isActive: z.boolean().optional(),
+    lastBookingDay: z.string().datetime({ message: 'lastBookingDay must be a valid ISO datetime' }).optional(),
   }),
 });
 

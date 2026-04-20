@@ -192,6 +192,14 @@ const getAllFeedPost = async (user: JwtPayload, query: any) => {
           comments: true,
         },
       },
+      likes: {
+         where: {
+            userId: user.userId
+         },
+         select: {
+            id: true
+         }
+      }
     },
   });
 

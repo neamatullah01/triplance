@@ -8,6 +8,12 @@ const router = express.Router();
 
 router.get('/', auth('ADMIN'), UserController.getAllUsers);
 
+router.get(
+  '/suggestions',
+  auth('TRAVELER', 'AGENCY', 'ADMIN'),
+  UserController.getSuggestedUsers
+);
+
 router.get('/:id', UserController.getUserById);
 
 router.patch(

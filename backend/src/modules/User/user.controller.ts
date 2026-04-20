@@ -75,6 +75,18 @@ const approveAgency = catchAsync(async (req, res) => {
   });
 });
 
+const getSuggestedUsers = catchAsync(async (req, res) => {
+  const result = await UserService.getSuggestedUsers(req.user, req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Suggested users retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const UserController = {
   getAllUsers,
   getUserById,
@@ -82,4 +94,5 @@ export const UserController = {
   deleteUser,
   banUser,
   approveAgency,
+  getSuggestedUsers,
 };

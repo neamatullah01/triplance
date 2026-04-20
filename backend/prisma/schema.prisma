@@ -80,6 +80,7 @@ model Package {
   destination     String
   rating          Float       @default(0)
   isActive        Boolean     @default(true)
+  lastBookingDay  DateTime?   // If set, package won't appear after this date
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -122,6 +123,10 @@ model Comment {
   post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  parentId        String?
+  parent          Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies         Comment[] @relation("CommentReplies")
 
   @@map("comments")
 }

@@ -175,6 +175,113 @@ const approveAgency = async (id: string, payload: { isVerified: boolean }) => {
   return updatedUser;
 };
 
+const getSuggestedUsers = async (authUser: JwtPayload, query: any) => {
+  const { page = 1, limit = 10, search } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+  const take = Number(limit);
+
+  // 1. Get all IDs the current user already follows
+  const alreadyFollowing = await prisma.follow.findMany({
+    where: { followerId: authUser.userId },
+    select: { followingId: true },
+  });
+  const followingIds = alreadyFollowing.map((f) => f.followingId);
+
+  // IDs to exclude: own account + already-followed users
+  const excludeIds = [...followingIds, authUser.userId];
+
+  // 2. Build search filter
+  const searchFilter = search
+    ? {
+        OR: [
+          { name: { contains: search as string, mode: 'insensitive' as const } },
+          { bio: { contains: search as string, mode: 'insensitive' as const } },
+        ],
+      }
+    : {};
+
+  // 3. Try: find TRAVELER followers-of-followers (people your followees follow)
+  let suggested: any[] = [];
+
+  if (followingIds.length > 0) {
+    // Get all users followed by the people I follow
+    const followersOfFollowees = await prisma.follow.findMany({
+      where: {
+        followerId: { in: followingIds },
+        followingId: { notIn: excludeIds },
+      },
+      select: { followingId: true },
+      distinct: ['followingId'],
+      take: skip + take,
+    });
+
+    const candidateIds = followersOfFollowees.map((f) => f.followingId);
+
+    if (candidateIds.length > 0) {
+      suggested = await prisma.user.findMany({
+        where: {
+          id: { in: candidateIds },
+          isBanned: false,
+          ...searchFilter,
+        },
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          bio: true,
+          role: true,
+          isVerified: true,
+          _count: { select: { followers: true, posts: true } },
+        },
+        skip,
+        take,
+      });
+    }
+  }
+
+  // 4. Fallback: if no network-based suggestions, show all TRAVELERs (excluding self and already-following)
+  if (suggested.length === 0) {
+    suggested = await prisma.user.findMany({
+      where: {
+        id: { notIn: excludeIds },
+        role: 'TRAVELER',
+        isBanned: false,
+        ...searchFilter,
+      },
+      select: {
+        id: true,
+        name: true,
+        profileImage: true,
+        bio: true,
+        role: true,
+        isVerified: true,
+        _count: { select: { followers: true, posts: true } },
+      },
+      orderBy: { followers: { _count: 'desc' } },
+      skip,
+      take,
+    });
+  }
+
+  // 5. Compute total for pagination metadata
+  const total = await prisma.user.count({
+    where: {
+      id: { notIn: excludeIds },
+      isBanned: false,
+      ...searchFilter,
+    },
+  });
+
+  return {
+    meta: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+    },
+    data: suggested,
+  };
+};
+
 export const UserService = {
   getAllUsers,
   getUserById,
@@ -182,4 +289,5 @@ export const UserService = {
   deleteUser,
   banUser,
   approveAgency,
+  getSuggestedUsers,
 };

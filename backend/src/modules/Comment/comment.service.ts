@@ -3,7 +3,7 @@ import AppError from '../../errors/AppError';
 import { prisma } from '../../lib/prisma';
 import { JwtPayload } from 'jsonwebtoken';
 
-const addComment = async (postId: string, payload: { text: string }, user: JwtPayload) => {
+const addComment = async (postId: string, payload: { text: string; parentId?: string }, user: JwtPayload) => {
   const post = await prisma.post.findUnique({
     where: { id: postId },
   });
@@ -17,6 +17,7 @@ const addComment = async (postId: string, payload: { text: string }, user: JwtPa
       text: payload.text,
       postId,
       userId: user.userId,
+      parentId: payload.parentId,
     },
     include: {
       user: {
@@ -44,7 +45,7 @@ const getCommentsByPost = async (postId: string) => {
         }
       }
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: 'asc' },
   });
 
   return comments;

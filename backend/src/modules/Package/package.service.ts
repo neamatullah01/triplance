@@ -44,6 +44,15 @@ const getAllPackagesFromDB = async (query: any) => {
   // isActive should be true for public queries
   andConditions.push({ isActive: true });
 
+  // Exclude packages whose lastBookingDay has already passed.
+  // Packages with no lastBookingDay set are always visible.
+  andConditions.push({
+    OR: [
+      { lastBookingDay: null },
+      { lastBookingDay: { gte: new Date() } },
+    ],
+  });
+
   if (searchTerm) {
     andConditions.push({
       OR: packageSearchableFields.map((field) => ({
