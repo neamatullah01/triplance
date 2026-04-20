@@ -9,8 +9,8 @@ export async function LeftSidebar() {
     <div className="flex flex-col gap-6">
       {/* User Profile Snippet */}
       <div className="flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="h-14 w-14 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
+        <Link href="/feed/profile" className="flex items-center gap-4 mb-5 group cursor-pointer">
+          <div className="h-14 w-14 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 group-hover:border-indigo-400 transition-colors">
             {user?.profileImage ? (
               <img src={user.profileImage} alt={user.name} className="h-full w-full object-cover" />
             ) : (
@@ -18,14 +18,14 @@ export async function LeftSidebar() {
             )}
           </div>
           <div className="flex flex-col">
-            <h3 className="text-base font-bold text-indigo-900 dark:text-indigo-200 leading-tight truncate w-32">
+            <h3 className="text-base font-bold text-indigo-900 dark:text-indigo-200 leading-tight truncate w-32 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
               {user?.name || "User"}
             </h3>
             <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate w-32">
               {user?.bio || (user?.role === "AGENCY" ? "Travel Agency" : "Global Explorer")}
             </p>
           </div>
-        </div>
+        </Link>
         
         <div className="w-full h-px bg-slate-100 dark:bg-slate-800 mb-5"></div>
         

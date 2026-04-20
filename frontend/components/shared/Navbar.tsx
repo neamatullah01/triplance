@@ -118,7 +118,7 @@ export function Navbar() {
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
                       </div>
                       <div className="py-2">
-                        <Link href={`/${user?.role === 'AGENCY' ? 'agency' : 'profile'}`} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                        <Link href={`/${user?.role === 'AGENCY' ? 'agency' : 'feed/profile'}`} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                           <UserIcon className="h-4 w-4" />
                           My Profile
                         </Link>
@@ -162,7 +162,7 @@ export function Navbar() {
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
                       </div>
                       <div className="py-2">
-                        <Link href={`/${user?.role === 'AGENCY' ? 'agency' : 'profile'}`} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                        <Link href={`/${user?.role === 'AGENCY' ? 'agency' : 'feed/profile'}`} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                           <UserIcon className="h-4 w-4" />
                           My Profile
                         </Link>

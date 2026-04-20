@@ -8,7 +8,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { createPost } from "@/services/post.service";
 
-export function CreatePostModal() {
+interface CreatePostModalProps {
+  customTrigger?: React.ReactNode;
+}
+
+export function CreatePostModal({ customTrigger }: CreatePostModalProps = {}) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState("");
@@ -174,13 +178,19 @@ export function CreatePostModal() {
 
   return (
     <>
-      <button 
-        onClick={handleOpen}
-        className="mt-4 flex items-center justify-center gap-2 w-full py-3.5 bg-rose-700 hover:bg-rose-800 text-white font-medium rounded-2xl transition-all shadow-sm hover:shadow-md hover:cursor-pointer active:scale-95"
-      >
-        <Plus className="h-5 w-5" />
-        Create Post
-      </button>
+      {customTrigger ? (
+        <div onClick={handleOpen} className="inline-block">
+          {customTrigger}
+        </div>
+      ) : (
+        <button 
+          onClick={handleOpen}
+          className="mt-4 flex items-center justify-center gap-2 w-full py-3.5 bg-rose-700 hover:bg-rose-800 text-white font-medium rounded-2xl transition-all shadow-sm hover:shadow-md hover:cursor-pointer active:scale-95"
+        >
+          <Plus className="h-5 w-5" />
+          Create Post
+        </button>
+      )}
 
       {mounted && createPortal(
         <AnimatePresence>
