@@ -53,3 +53,22 @@ export const getFeedPost = async (page: number = 1, limit: number = 10) => {
     return { success: false, message: error.message || "Failed to fetch feed" };
   }
 };
+
+export const getMyPosts = async () => {
+  try {
+    const storeCookie = await cookies();
+    const token = storeCookie.get("token")?.value;
+
+    const res = await fetch(`${env.API_URL}/posts/my`, {
+      method: "GET",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      cache: "no-store" 
+    });
+
+    const result = await res.json();
+    return result.success ? result.data : [];
+  } catch (error: any) {
+    console.error("Error fetching my posts:", error);
+    return [];
+  }
+};

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/services/auth.service";
+import { getMyPosts } from "@/services/post.service";
 import { ProfileClient } from "@/components/profile/ProfileClient";
 
 export const metadata = {
@@ -24,9 +25,11 @@ export default async function ProfilePage() {
     followingCount: user._count?.following || 0,
   };
 
+  const myPosts = await getMyPosts() || [];
+
   return (
     <>
-      <ProfileClient user={safeUser} />
+      <ProfileClient user={safeUser} initialPosts={myPosts} />
     </>
   );
 }

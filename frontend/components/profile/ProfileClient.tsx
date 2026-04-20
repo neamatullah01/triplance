@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, CalendarDays, Edit3, Grid, Map, Star, ShieldCheck, Plus } from "lucide-react";
+import { MapPin, CalendarDays, Edit3, Grid, Map, Star, ShieldCheck, Plus, Heart, MessageCircle } from "lucide-react";
 import { CreatePostModal } from "@/components/feed/CreatePostModal";
 
 // --- Animation Variants ---
@@ -16,7 +16,7 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export function ProfileClient({ user }: { user: any }) {
+export function ProfileClient({ user, initialPosts = [] }: { user: any, initialPosts?: any[] }) {
   const [activeTab, setActiveTab] = useState("posts");
 
   const tabs = [
@@ -28,6 +28,31 @@ export function ProfileClient({ user }: { user: any }) {
   const joinedDate = user?.createdAt 
     ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : "Recently";
+
+  // Helper to nicely format time
+  const formatTime = (dateString: string) => {
+    if (!dateString) return 'Recently';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [expandedLikes, setExpandedLikes] = useState<Record<string, boolean>>({});
+
+  const handleToggleComments = (postId: string) => {
+    setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
+  const handleToggleLikes = (postId: string) => {
+    setExpandedLikes(prev => ({ ...prev, [postId]: !prev[postId] }));
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
@@ -142,13 +167,158 @@ export function ProfileClient({ user }: { user: any }) {
           animate="visible"
         >
           {activeTab === "posts" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Add your post cards here. For now, empty state: */}
-              <motion.div variants={itemVariants} className="col-span-full py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                <Grid className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No posts yet</h3>
-                <p className="text-slate-500">Share your first travel memory!</p>
-              </motion.div>
+            <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+              {initialPosts && initialPosts.length > 0 ? (
+                initialPosts.map((post) => (
+                  <motion.article 
+                    variants={itemVariants} 
+                    key={post.id} 
+                    className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-10 w-10 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-100 dark:border-slate-700 shrink-0">
+                        {user.profileImage ? (
+                          <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-slate-500 font-bold">
+                            {user.name?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{user.name}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {formatTime(post.createdAt)} {post.location && ` • ${post.location}`}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4 whitespace-pre-wrap">
+                      {post.content}
+                    </p>
+
+                    {post.images && post.images.length > 0 && (
+                      <div className={`grid gap-2 ${post.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        {post.images.map((img: string, idx: number) => (
+                          <div key={idx} className={`h-64 sm:h-80 bg-slate-100 dark:bg-slate-800 overflow-hidden ${
+                            post.images.length === 1 ? 'rounded-2xl' : 
+                            idx === 0 ? 'rounded-l-2xl rounded-r-sm' : 
+                            idx === 1 ? 'rounded-r-2xl rounded-l-sm' : 'rounded-xl'
+                          }`}>
+                            <img src={img} alt="Post Media" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Unified Action Bar style from MainFeed */}
+                    <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/50">
+                      <div className="flex items-center gap-6">
+                        <button onClick={() => handleToggleLikes(post.id)} className={`flex items-center gap-2 transition-colors cursor-pointer group ${expandedLikes[post.id] ? 'text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}>
+                          <Heart className="h-5 w-5 group-hover:scale-110 transition-transform" fill={expandedLikes[post.id] ? "currentColor" : "none"} /> 
+                          <span className="text-sm font-medium">{post._count?.likes || 0}</span>
+                        </button>
+                        <button onClick={() => handleToggleComments(post.id)} className={`flex items-center gap-2 transition-colors cursor-pointer group ${expandedComments[post.id] ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'}`}>
+                          <MessageCircle className="h-5 w-5 group-hover:scale-110 transition-transform" fill={expandedComments[post.id] ? "currentColor" : "none"} /> 
+                          <span className="text-sm font-medium">{post._count?.comments || 0}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expandable LIKES Section View */}
+                    {expandedLikes[post.id] && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Liked By</span>
+                        {post.likes && post.likes.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                             {post.likes.map((like: any) => (
+                               <div key={like.id} className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/10 rounded-lg border border-rose-100 dark:border-rose-900/30">
+                                 <div className="h-5 w-5 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-600 shrink-0">
+                                    {like.user?.profileImage ? (
+                                      <img src={like.user.profileImage} alt={like.user.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">{like.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                                    )}
+                                 </div>
+                                 <span className="text-xs font-semibold text-rose-700 dark:text-rose-300">{like.user?.name || "Traveler"}</span>
+                               </div>
+                             ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-500">No likes yet.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Expandable COMMENTS Section View */}
+                    {expandedComments[post.id] && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {(!post.comments || post.comments.length === 0) ? (
+                          <p className="text-xs text-slate-500 text-center py-2 bg-slate-50 dark:bg-slate-800/30 rounded-xl">No comments yet. Start the conversation!</p>
+                        ) : (
+                          <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                            {(post.comments.filter((c: any) => !c.parentId)).map((rootComment: any) => (
+                              <div key={rootComment.id} className="flex flex-col gap-2">
+                                {/* Root Comment Container */}
+                                <div className="flex gap-2.5 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
+                                  <div className="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-600">
+                                    {rootComment.user?.profileImage ? (
+                                      <img src={rootComment.user.profileImage} alt={rootComment.user.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{rootComment.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{rootComment.user?.name || "Traveler"}</span>
+                                      <span className="text-[10px] text-slate-400">{formatTime(rootComment.createdAt)}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
+                                      {rootComment.text || rootComment.content || rootComment.textcontent}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                {/* Child Replies */}
+                                {(post.comments.filter((child: any) => child.parentId === rootComment.id)).map((reply: any) => (
+                                  <div key={reply.id} className="flex gap-2.5 pl-10 pr-2 py-1 relative">
+                                    {/* Small L curve to show nesting visually */}
+                                    <div className="absolute left-6 top-0 bottom-4 w-px bg-slate-200 dark:bg-slate-700"></div>
+                                    <div className="absolute left-6 bottom-4 w-3 h-px bg-slate-200 dark:bg-slate-700"></div>
+                                    
+                                    <div className="h-6 w-6 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden z-10 border border-slate-100 dark:border-slate-600">
+                                      {reply.user?.profileImage ? (
+                                        <img src={reply.user.profileImage} alt={reply.user.name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{reply.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{reply.user?.name || "Traveler"}</span>
+                                        <span className="text-[10px] text-slate-400">{formatTime(reply.createdAt)}</span>
+                                      </div>
+                                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
+                                        {reply.text || reply.content || reply.textcontent}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </motion.article>
+                ))
+              ) : (
+                <motion.div variants={itemVariants} className="col-span-full py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                  <Grid className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No posts yet</h3>
+                  <p className="text-slate-500">Share your first travel memory!</p>
+                </motion.div>
+              )}
             </div>
           )}
 
