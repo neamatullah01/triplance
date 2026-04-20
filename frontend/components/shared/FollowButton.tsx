@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserRoundPlus, UserCheck, Loader2 } from "lucide-react";
 import { followUser, unfollowUser } from "@/services/follow.service";
 import { toast } from "sonner";
@@ -22,6 +22,10 @@ export function FollowButton({
 }: FollowButtonProps) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsFollowing(initialIsFollowing);
+  }, [initialIsFollowing]);
 
   const handleToggleFollow = async () => {
     if (isLoading) return;

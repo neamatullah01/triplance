@@ -128,6 +128,29 @@ export const getSuggestedUsers = async () => {
   }
 };
 
+export const allAgencyForUser = async (search?: string, page: number = 1, limit: number = 20) => {
+  const storeCookie = await cookies();
+  const token = storeCookie.get("token")?.value;
+  try {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    if (search) queryParams.append('search', search);
+
+    const res = await fetch(`${env.API_URL}/users/agencies?${queryParams.toString()}`, {
+      method: "GET",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      cache: "no-store"
+    });
+    const result = await res.json();
+    return result.success ? result : { data: [], meta: { page, limit, total: 0 } };
+  } catch (error) {
+    console.error("Error fetching all agencies:", error);
+    return { data: [], meta: { page, limit, total: 0 } };
+  }
+};
+
 export const logoutUser = async () => {
   const storeCookie = await cookies();
   storeCookie.delete("token");
