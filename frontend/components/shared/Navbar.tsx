@@ -2,13 +2,23 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // Added usePathname
+import { motion } from "framer-motion"; // Added framer-motion
 import { Search, Bell, CircleUser, Menu, PlaneTakeoff, LogOut, User as UserIcon } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { getUser, logoutUser } from "@/services/auth.service";
 
+// Define your navigation links centrally
+const navLinks = [
+  { name: "Feed", href: "/feed" },
+  { name: "Explore", href: "/explore" },
+  { name: "Bookings", href: "/bookings" },
+  { name: "Agency", href: "/agency" },
+];
+
 export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname(); // Get current URL path
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
 
@@ -43,20 +53,37 @@ export function Navbar() {
             Triplance
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation Links with Animated Underline */}
           <div className="hidden lg:flex items-center gap-6 mt-1">
-            <Link href="/feed" className="text-sm font-semibold text-indigo-800 dark:text-indigo-300 border-b-2 border-indigo-800 dark:border-indigo-300 pb-1">
-              Feed
-            </Link>
-            <Link href="/explore" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors pb-1">
-              Explore
-            </Link>
-            <Link href="/bookings" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors pb-1">
-              Bookings
-            </Link>
-            <Link href="/agency" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors pb-1">
-              Agency
-            </Link>
+            {navLinks.map((link) => {
+              // Check if the current pathname starts with the link href (handles sub-routes too)
+              const isActive = pathname.startsWith(link.href);
+
+              return (
+                <Link 
+                  key={link.name} 
+                  href={link.href} 
+                  className="relative pb-1 group"
+                >
+                  <span className={`text-sm transition-colors duration-200 ${
+                    isActive 
+                      ? "font-semibold text-indigo-800 dark:text-indigo-300" 
+                      : "font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                  }`}>
+                    {link.name}
+                  </span>
+                  
+                  {/* Framer Motion Animated Underline */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="navbar-active-indicator"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-800 dark:bg-indigo-300 rounded-full"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </div>
 
@@ -180,13 +207,24 @@ export function Navbar() {
               />
             </div>
 
-            {/* Mobile Links */}
-            <Link href="/feed" className="text-base font-semibold text-indigo-800 dark:text-indigo-300" onClick={() => setIsMobileMenuOpen(false)}>Feed</Link>
-            <Link href="/explore" className="text-base font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100" onClick={() => setIsMobileMenuOpen(false)}>Explore</Link>
-            <Link href="/bookings" className="text-base font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100" onClick={() => setIsMobileMenuOpen(false)}>Bookings</Link>
-            <Link href="/agency" className="text-base font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100" onClick={() => setIsMobileMenuOpen(false)}>Agency</Link>
-
-
+            {/* Mobile Links with Active State */}
+            {navLinks.map((link) => {
+              const isActive = pathname.startsWith(link.href);
+              return (
+                <Link 
+                  key={link.name}
+                  href={link.href} 
+                  className={`text-base ${
+                    isActive 
+                      ? "font-semibold text-indigo-800 dark:text-indigo-300" 
+                      : "font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                  }`} 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.name}
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}
