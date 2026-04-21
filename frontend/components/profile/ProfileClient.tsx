@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { MapPin, CalendarDays, Edit3, Grid, Map, Star, ShieldCheck, Plus, Heart, MessageCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MapPin, CalendarDays, Edit3, Grid, Map, Star, ShieldCheck, Plus, Heart, MessageCircle, X, Loader2, Send, Compass, Bookmark, Settings } from "lucide-react";
 import { CreatePostModal } from "@/components/feed/CreatePostModal";
+import { getComments, addComment } from "@/services/comment.service";
+import { toast } from "sonner";
 
 // --- Animation Variants ---
 const containerVariants = {
@@ -21,8 +23,11 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
 
   const tabs = [
     { id: "posts", label: "Posts", icon: Grid },
-    { id: "bookings", label: "Journeys", icon: Map },
     { id: "reviews", label: "Reviews", icon: Star },
+    { id: "bookings", label: "Journeys", icon: Map },
+    { id: "discover", label: "Discover", icon: Compass },
+    { id: "saved", label: "Saved", icon: Bookmark },
+    { id: "settings", label: "Settings", icon: Settings },
   ];
 
   const joinedDate = user?.createdAt 
@@ -43,15 +48,66 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
     return date.toLocaleDateString();
   };
 
-  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
-  const [expandedLikes, setExpandedLikes] = useState<Record<string, boolean>>({});
+  const [posts, setPosts] = useState<any[]>(initialPosts);
 
-  const handleToggleComments = (postId: string) => {
-    setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  useEffect(() => {
+    setPosts(initialPosts);
+  }, [initialPosts]);
+
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  
+  const [commentsData, setCommentsData] = useState<Record<string, any[]>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [isSubmittingComment, setIsSubmittingComment] = useState<Record<string, boolean>>({});
+  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
+  const [replyTargets, setReplyTargets] = useState<Record<string, { id: string, name: string } | null>>({});
+  const [modalLikesOpen, setModalLikesOpen] = useState<string | null>(null);
+
+  const handleToggleComments = async (postId: string) => {
+    const isExpanded = !!expandedComments[postId];
+    setExpandedComments(prev => ({ ...prev, [postId]: !isExpanded }));
+
+    if (!isExpanded && !commentsData[postId]) {
+      setLoadingComments(prev => ({ ...prev, [postId]: true }));
+      try {
+        const comments = await getComments(postId);
+        setCommentsData(prev => ({ ...prev, [postId]: Array.isArray(comments) ? comments : [] }));
+      } catch (err) {
+        toast.error("Failed to load comments");
+      } finally {
+        setLoadingComments(prev => ({ ...prev, [postId]: false }));
+      }
+    }
+  };
+
+  const handlePostComment = async (postId: string) => {
+    const text = commentInputs[postId]?.trim();
+    if (!text) return;
+
+    setIsSubmittingComment(prev => ({ ...prev, [postId]: true }));
+    const toastId = toast.loading("Posting comment...");
+    
+    const parentId = replyTargets[postId]?.id;
+
+    const res = await addComment(postId, text, parentId);
+    if (res?.success) {
+      toast.success("Comment added", { id: toastId });
+      setCommentInputs(prev => ({ ...prev, [postId]: "" }));
+      setReplyTargets(prev => ({ ...prev, [postId]: null }));
+      
+      setPosts((prev) => prev.map(item => item.id === postId ? { ...item, _count: { ...item._count, comments: (item._count?.comments || 0) + 1 }} : item));
+
+      const newComment = res.data || { id: Math.random().toString(), content: text, parentId, createdAt: new Date().toISOString(), user: { name: user?.name || "You", profileImage: user?.profileImage } };
+      setCommentsData(prev => ({ ...prev, [postId]: [...(prev[postId] || []), newComment] }));
+    } else {
+      toast.error(res?.message || "Failed to post comment", { id: toastId });
+    }
+    
+    setIsSubmittingComment(prev => ({ ...prev, [postId]: false }));
   };
 
   const handleToggleLikes = (postId: string) => {
-    setExpandedLikes(prev => ({ ...prev, [postId]: !prev[postId] }));
+    setModalLikesOpen(postId);
   };
 
   return (
@@ -130,7 +186,7 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
           </div>
           
           {/* Tabs */}
-          <div className="flex overflow-x-auto hide-scrollbar px-4 sm:px-8 border-t border-slate-100 dark:border-slate-800/50">
+          <div className="flex overflow-x-auto hide-scrollbar px-2 sm:px-8 border-t border-slate-100 dark:border-slate-800/50 w-full">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               const Icon = tab.icon;
@@ -138,12 +194,12 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center gap-2 px-6 py-4 text-sm font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`relative flex items-center justify-center flex-col md:flex-row flex-1 md:flex-none gap-1 sm:gap-2 px-1 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-sm font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
+                  <Icon className="h-4 w-4 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="truncate">{tab.label}</span>
                   {isActive && (
                     <motion.div
                       layoutId="profile-tab-indicator"
@@ -168,8 +224,8 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
         >
           {activeTab === "posts" && (
             <div className="flex flex-col gap-6 max-w-2xl mx-auto">
-              {initialPosts && initialPosts.length > 0 ? (
-                initialPosts.map((post) => (
+              {posts && posts.length > 0 ? (
+                posts.map((post) => (
                   <motion.article 
                     variants={itemVariants} 
                     key={post.id} 
@@ -214,8 +270,8 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
                     {/* Unified Action Bar style from MainFeed */}
                     <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/50">
                       <div className="flex items-center gap-6">
-                        <button onClick={() => handleToggleLikes(post.id)} className={`flex items-center gap-2 transition-colors cursor-pointer group ${expandedLikes[post.id] ? 'text-rose-600' : 'text-slate-500 hover:text-rose-600'}`}>
-                          <Heart className="h-5 w-5 group-hover:scale-110 transition-transform" fill={expandedLikes[post.id] ? "currentColor" : "none"} /> 
+                        <button onClick={() => handleToggleLikes(post.id)} className={`flex items-center gap-2 transition-colors cursor-pointer group text-slate-500 hover:text-rose-600`}>
+                          <Heart className="h-5 w-5 group-hover:scale-110 transition-transform" fill="none" /> 
                           <span className="text-sm font-medium">{post._count?.likes || 0}</span>
                         </button>
                         <button onClick={() => handleToggleComments(post.id)} className={`flex items-center gap-2 transition-colors cursor-pointer group ${expandedComments[post.id] ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'}`}>
@@ -225,89 +281,116 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
                       </div>
                     </div>
 
-                    {/* Expandable LIKES Section View */}
-                    {expandedLikes[post.id] && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Liked By</span>
-                        {post.likes && post.likes.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                             {post.likes.map((like: any) => (
-                               <div key={like.id} className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/10 rounded-lg border border-rose-100 dark:border-rose-900/30">
-                                 <div className="h-5 w-5 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-600 shrink-0">
-                                    {like.user?.profileImage ? (
-                                      <img src={like.user.profileImage} alt={like.user.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">{like.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
-                                    )}
-                                 </div>
-                                 <span className="text-xs font-semibold text-rose-700 dark:text-rose-300">{like.user?.name || "Traveler"}</span>
-                               </div>
-                             ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-500">No likes yet.</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Expandable COMMENTS Section View */}
+                    {/* Expandable Comments Section */}
                     {expandedComments[post.id] && (
                       <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {(!post.comments || post.comments.length === 0) ? (
+                        {loadingComments[post.id] ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
+                          </div>
+                        ) : commentsData[post.id]?.length === 0 ? (
                           <p className="text-xs text-slate-500 text-center py-2 bg-slate-50 dark:bg-slate-800/30 rounded-xl">No comments yet. Start the conversation!</p>
                         ) : (
                           <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                            {(post.comments.filter((c: any) => !c.parentId)).map((rootComment: any) => (
+                            {(commentsData[post.id]?.filter(c => !c.parentId) || []).map((rootComment: any) => (
                               <div key={rootComment.id} className="flex flex-col gap-2">
-                                {/* Root Comment Container */}
-                                <div className="flex gap-2.5 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
-                                  <div className="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-600">
-                                    {rootComment.user?.profileImage ? (
-                                      <img src={rootComment.user.profileImage} alt={rootComment.user.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{rootComment.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{rootComment.user?.name || "Traveler"}</span>
-                                      <span className="text-[10px] text-slate-400">{formatTime(rootComment.createdAt)}</span>
-                                    </div>
-                                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
-                                      {rootComment.text || rootComment.content || rootComment.textcontent}
-                                    </p>
-                                  </div>
-                                </div>
-                                
-                                {/* Child Replies */}
-                                {(post.comments.filter((child: any) => child.parentId === rootComment.id)).map((reply: any) => (
-                                  <div key={reply.id} className="flex gap-2.5 pl-10 pr-2 py-1 relative">
-                                    {/* Small L curve to show nesting visually */}
-                                    <div className="absolute left-6 top-0 bottom-4 w-px bg-slate-200 dark:bg-slate-700"></div>
-                                    <div className="absolute left-6 bottom-4 w-3 h-px bg-slate-200 dark:bg-slate-700"></div>
-                                    
-                                    <div className="h-6 w-6 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden z-10 border border-slate-100 dark:border-slate-600">
-                                      {reply.user?.profileImage ? (
-                                        <img src={reply.user.profileImage} alt={reply.user.name} className="w-full h-full object-cover" />
-                                      ) : (
-                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{reply.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{reply.user?.name || "Traveler"}</span>
-                                        <span className="text-[10px] text-slate-400">{formatTime(reply.createdAt)}</span>
-                                      </div>
-                                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
-                                        {reply.text || reply.content || reply.textcontent}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
+                                 {/* Root Comment Container */}
+                                 <div className="flex gap-2.5 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
+                                   <div className="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-600">
+                                     {rootComment.user?.profileImage ? (
+                                       <img src={rootComment.user.profileImage} alt={rootComment.user.name} className="w-full h-full object-cover" />
+                                     ) : (
+                                       <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{rootComment.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                                     )}
+                                   </div>
+                                   <div className="flex flex-col min-w-0">
+                                     <div className="flex items-center gap-2">
+                                       <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{rootComment.user?.name || "Traveler"}</span>
+                                       <span className="text-[10px] text-slate-400">{formatTime(rootComment.createdAt)}</span>
+                                     </div>
+                                     <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
+                                       {rootComment.text || rootComment.content || rootComment.textcontent}
+                                     </p>
+                                     <div className="flex items-center gap-3 mt-1.5 pt-0.5">
+                                        <button 
+                                          onClick={() => setReplyTargets(prev => ({ ...prev, [post.id]: { id: rootComment.id, name: rootComment.user?.name || 'User' } }))}
+                                          className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                                        >
+                                          Reply
+                                        </button>
+                                     </div>
+                                   </div>
+                                 </div>
+                                 
+                                 {/* Child Replies */}
+                                 {(commentsData[post.id]?.filter(child => child.parentId === rootComment.id) || []).map((reply: any) => (
+                                   <div key={reply.id} className="flex gap-2.5 pl-10 pr-2 py-1 relative">
+                                     {/* Small L curve to show nesting visually */}
+                                     <div className="absolute left-6 top-0 bottom-4 w-px bg-slate-200 dark:bg-slate-700"></div>
+                                     <div className="absolute left-6 bottom-4 w-3 h-px bg-slate-200 dark:bg-slate-700"></div>
+                                     
+                                     <div className="h-6 w-6 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden z-10 border border-slate-100 dark:border-slate-600">
+                                       {reply.user?.profileImage ? (
+                                         <img src={reply.user.profileImage} alt={reply.user.name} className="w-full h-full object-cover" />
+                                       ) : (
+                                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{reply.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                                       )}
+                                     </div>
+                                     <div className="flex flex-col min-w-0">
+                                       <div className="flex items-center gap-2">
+                                         <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{reply.user?.name || "Traveler"}</span>
+                                         <span className="text-[10px] text-slate-400">{formatTime(reply.createdAt)}</span>
+                                       </div>
+                                       <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
+                                         {reply.text || reply.content || reply.textcontent}
+                                       </p>
+                                       <div className="flex items-center gap-3 mt-1.5 pt-0.5">
+                                          <button 
+                                            onClick={() => setReplyTargets(prev => ({ ...prev, [post.id]: { id: rootComment.id, name: reply.user?.name || 'User' } }))}
+                                            className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                                          >
+                                            Reply
+                                          </button>
+                                       </div>
+                                     </div>
+                                   </div>
+                                 ))}
                               </div>
                             ))}
                           </div>
                         )}
+
+                        {/* Comment Input Bar */}
+                        <div className="flex flex-col gap-2 mt-2">
+                          {replyTargets[post.id] && (
+                             <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                               <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                                 Replying to @{replyTargets[post.id]?.name}
+                               </span>
+                               <button onClick={() => setReplyTargets(prev => ({ ...prev, [post.id]: null }))} className="text-indigo-400 hover:text-indigo-700 cursor-pointer text-xs font-bold">
+                                 Cancel
+                               </button>
+                             </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              placeholder={replyTargets[post.id] ? `Write a reply...` : `Write a comment...`}
+                              value={commentInputs[post.id] || ""}
+                              onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                              onKeyDown={(e) => e.key === 'Enter' && handlePostComment(post.id)}
+                              className="flex-1 bg-slate-100 dark:bg-slate-800 border-none px-4 py-2.5 rounded-full text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                              disabled={isSubmittingComment[post.id]}
+                            />
+                            <button 
+                              onClick={() => handlePostComment(post.id)}
+                              disabled={!commentInputs[post.id]?.trim() || isSubmittingComment[post.id]}
+                              className="p-2.5 rounded-full bg-indigo-600 text-white disabled:opacity-50 hover:bg-indigo-700 transition-colors shrink-0 cursor-pointer"
+                            >
+                              {isSubmittingComment[post.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 -ml-0.5" />}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </motion.article>
@@ -341,9 +424,99 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
               </motion.div>
             </div>
           )}
+
+          {activeTab === "discover" && (
+            <div className="flex flex-col gap-4">
+              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                <Compass className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Discover</h3>
+                <p className="text-slate-500">Find new places and agencies to explore.</p>
+              </motion.div>
+            </div>
+          )}
+
+          {activeTab === "saved" && (
+            <div className="flex flex-col gap-4">
+              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                <Bookmark className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No saved items</h3>
+                <p className="text-slate-500">Save your favorite posts and packages here.</p>
+              </motion.div>
+            </div>
+          )}
+
+          {activeTab === "settings" && (
+            <div className="flex flex-col gap-4">
+              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                <Settings className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Settings</h3>
+                <p className="text-slate-500">Manage your account preferences here.</p>
+              </motion.div>
+            </div>
+          )}
         </motion.div>
       </div>
 
+      {/* Likes Modal */}
+      <AnimatePresence>
+        {modalLikesOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm" onClick={() => setModalLikesOpen(null)}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden mb-16 shadow-2xl w-full max-w-md max-h-[70vh] flex flex-col border border-slate-100 dark:border-slate-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-rose-500" fill="currentColor" /> Reactions
+                </h3>
+                <button 
+                  onClick={() => setModalLikesOpen(null)}
+                  className="p-2 -mr-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto p-2 sm:p-4 custom-scrollbar">
+                {(() => {
+                  const post = posts.find((p: any) => p.id === modalLikesOpen);
+                  if (!post || !post.likes || post.likes.length === 0) {
+                    return (
+                      <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-3">
+                         <Heart className="h-10 w-10 opacity-20" />
+                         <p className="text-sm font-medium">No likes yet.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-col gap-1">
+                      {post.likes.map((like: any) => (
+                        <div key={like.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                          <div className="h-12 w-12 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden shrink-0 border border-slate-100 dark:border-slate-800">
+                            {like.user?.profileImage ? (
+                              <img src={like.user.profileImage} alt={like.user.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-base font-bold text-slate-500 dark:text-slate-400">{like.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{like.user?.name || "Traveler"}</span>
+                            <span className="text-xs text-slate-500 truncate">Liked {formatTime(like.createdAt || post.createdAt)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
