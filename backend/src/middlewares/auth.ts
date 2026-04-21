@@ -54,7 +54,6 @@ const auth = (...requiredRoles: TUserRole[]) => {
     ) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
-
     req.user = decoded as JwtPayload;
     next();
   });

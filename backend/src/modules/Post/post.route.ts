@@ -21,7 +21,11 @@ router.get(
 
 router.get('/', PostController.getAllPosts);
 
-router.get('/:id', PostController.getPostById);
+router.get(
+  '/my',
+  auth('TRAVELER', 'AGENCY', 'ADMIN'),
+  PostController.getPostById
+);
 
 router.patch(
   '/:id',

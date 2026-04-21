@@ -62,9 +62,14 @@ const getAllPosts = async (query: any) => {
   };
 };
 
-const getPostById = async (id: string) => {
-  const post = await prisma.post.findUnique({
-    where: { id },
+const getPostById = async (user: JwtPayload, query: any) => {
+  const { page = 1, limit = 10 } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const posts = await prisma.post.findMany({
+    where: { authorId: user.userId },
+    skip,
+    take: Number(limit),
     include: {
       author: {
         select: {
@@ -72,6 +77,23 @@ const getPostById = async (id: string) => {
           name: true,
           profileImage: true,
           role: true,
+        }
+      },
+      _count: {
+        select: {
+          likes: true,
+          comments: true,
+        }
+      },
+      likes: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profileImage: true,
+            }
+          }
         }
       },
       comments: {
@@ -85,21 +107,21 @@ const getPostById = async (id: string) => {
           }
         },
         orderBy: { createdAt: 'desc' }
-      },
-      _count: {
-        select: {
-          likes: true,
-          comments: true,
-        }
       }
     },
+    orderBy: { createdAt: 'desc' }
   });
 
-  if (!post) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
-  }
+  const total = await prisma.post.count({ where: { authorId: user.userId } });
 
-  return post;
+  return {
+    meta: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+    },
+    data: posts,
+  };
 };
 
 const updatePost = async (id: string, payload: any, user: JwtPayload) => {

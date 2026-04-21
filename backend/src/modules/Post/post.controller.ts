@@ -39,14 +39,14 @@ const getAllFeedPost = catchAsync(async (req, res) => {
 });
 
 const getPostById = catchAsync(async (req, res) => {
-  const id = req.params.id as string;
-  const result = await PostService.getPostById(id);
+  const result = await PostService.getPostById(req.user, req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Post retrieved successfully',
-    data: result,
+    message: 'User posts retrieved successfully',
+    meta: result.meta,
+    data: result.data,
   });
 });
 

@@ -3,6 +3,7 @@ import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
 import { UserValidation } from './user.validation';
 import { UserController } from './user.controller';
+import { upload } from '../../utils/multer';
 
 const router = express.Router();
 
@@ -14,12 +15,25 @@ router.get(
   UserController.getSuggestedUsers
 );
 
+router.get(
+  '/agencies',
+  auth('TRAVELER', 'AGENCY', 'ADMIN'),
+  UserController.getAllAgenciesForUser
+);
+
 router.get('/:id', UserController.getUserById);
 
 router.patch(
   '/:id',
   auth('ADMIN', 'TRAVELER', 'AGENCY'),
   validateRequest(UserValidation.updateUserValidationSchema),
+  UserController.updateProfile
+);
+
+router.patch(
+  '/:id',
+  auth('TRAVELER', 'AGENCY', 'ADMIN'),
+  validateRequest(UserValidation.updateUserValidationSchema), // Zod is happy again!
   UserController.updateProfile
 );
 
