@@ -1,30 +1,104 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, CalendarDays, Edit3, Grid, Map, Star, ShieldCheck, Plus, Heart, MessageCircle, X, Loader2, Send, Compass, Bookmark, Settings } from "lucide-react";
-import { CreatePostModal } from "@/components/feed/CreatePostModal";
-import { EditProfileModal } from "./EditProfileModal"; // <-- Import the new modal
-import { getComments, addComment } from "@/services/comment.service";
-import { toast } from "sonner";
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  MapPin,
+  CalendarDays,
+  Edit3,
+  Grid,
+  Map,
+  Star,
+  ShieldCheck,
+  Plus,
+  Compass,
+  Bookmark,
+  Settings,
+  MoreHorizontal,
+  Heart,
+  MessageCircle,
+  Share2,
+  CheckCircle2,
+  Loader2,
+  Send,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react"
+
+import { CreatePostModal } from "@/components/feed/CreatePostModal"
+import { EditProfileModal } from "./EditProfileModal"
+import { FollowButton } from "@/components/shared/FollowButton"
+import Link from "next/link"
+import { toast } from "sonner"
+
+import { likePost, unlikePost } from "@/services/like.service"
+import { getComments, addComment } from "@/services/comment.service"
 
 // --- Animation Variants ---
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-};
+}
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
+}
 
-export function ProfileClient({ user, initialPosts = [] }: { user: any, initialPosts?: any[] }) {
-  // Local state for optimistic UI updates after editing profile
-  const [localUser, setLocalUser] = useState(user);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+export function ProfileClient({
+  user,
+  initialPosts = [],
+}: {
+  user: any
+  initialPosts?: any[]
+}) {
+  const [localUser, setLocalUser] = useState(user)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("posts")
+  const [posts, setPosts] = useState<any[]>(initialPosts)
 
-  const [activeTab, setActiveTab] = useState("posts");
+  // --- Inline Post States (Same as MainFeed) ---
+  const [following, setFollowing] = useState<Set<string>>(new Set())
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
+  const [expandedComments, setExpandedComments] = useState<
+    Record<string, boolean>
+  >({})
+  const [commentsData, setCommentsData] = useState<Record<string, any[]>>({})
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
+  const [isSubmittingComment, setIsSubmittingComment] = useState<
+    Record<string, boolean>
+  >({})
+  const [loadingComments, setLoadingComments] = useState<
+    Record<string, boolean>
+  >({})
+  const [replyTargets, setReplyTargets] = useState<
+    Record<string, { id: string; name: string } | null>
+  >({})
+
+  const [lightbox, setLightbox] = useState<{
+    isOpen: boolean
+    images: string[]
+    currentIndex: number
+  }>({
+    isOpen: false,
+    images: [],
+    currentIndex: 0,
+  })
+
+  // Initialize posts and likes
+  useEffect(() => {
+    setPosts(initialPosts)
+    setLikedPosts((prevLikes) => {
+      const updated = new Set(prevLikes)
+      initialPosts.forEach((item: any) => {
+        if (item.isLiked || (item.likes && item.likes.length > 0)) {
+          updated.add(item.id)
+        }
+      })
+      return updated
+    })
+  }, [initialPosts])
 
   const tabs = [
     { id: "posts", label: "Posts", icon: Grid },
@@ -33,202 +107,387 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
     { id: "discover", label: "Discover", icon: Compass },
     { id: "saved", label: "Saved", icon: Bookmark },
     { id: "settings", label: "Settings", icon: Settings },
-  ];
+  ]
 
-  const joinedDate = localUser?.createdAt 
-    ? new Date(localUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : "Recently";
+  const joinedDate = localUser?.createdAt
+    ? new Date(localUser.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+    : "Recently"
 
-  // Helper to nicely format time
+  const handleProfileUpdate = (updatedData: any) => {
+    setLocalUser((prev: any) => ({ ...prev, ...updatedData }))
+  }
+
   const formatTime = (dateString: string) => {
-    if (!dateString) return 'Recently';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    return date.toLocaleDateString();
-  };
+    if (!dateString) return "Just now"
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-  const [posts, setPosts] = useState<any[]>(initialPosts);
+    if (diffInSeconds < 60) return "Just now"
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+    if (diffInSeconds < 604800)
+      return `${Math.floor(diffInSeconds / 86400)}d ago`
+    return date.toLocaleDateString()
+  }
 
-  useEffect(() => {
-    setPosts(initialPosts);
-  }, [initialPosts]);
+  // --- Post Action Handlers ---
+  const handleToggleLike = async (postId: string) => {
+    const isLiked = likedPosts.has(postId)
+    setLikedPosts((prev) => {
+      const next = new Set(prev)
+      if (isLiked) next.delete(postId)
+      else next.add(postId)
+      return next
+    })
 
-  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
-  
-  const [commentsData, setCommentsData] = useState<Record<string, any[]>>({});
-  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-  const [isSubmittingComment, setIsSubmittingComment] = useState<Record<string, boolean>>({});
-  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
-  const [replyTargets, setReplyTargets] = useState<Record<string, { id: string, name: string } | null>>({});
-  const [modalLikesOpen, setModalLikesOpen] = useState<string | null>(null);
+    setPosts((prev) =>
+      prev.map((item) => {
+        if (item.id === postId) {
+          const count = item._count?.likes || 0
+          return {
+            ...item,
+            _count: {
+              ...item._count,
+              likes: isLiked ? Math.max(0, count - 1) : count + 1,
+            },
+          }
+        }
+        return item
+      })
+    )
+
+    if (isLiked) {
+      const res = await unlikePost(postId)
+      if (!res?.success) toast.error(res?.message || "Failed to unlike post")
+    } else {
+      const res = await likePost(postId)
+      if (!res?.success) toast.error(res?.message || "Failed to like post")
+    }
+  }
 
   const handleToggleComments = async (postId: string) => {
-    const isExpanded = !!expandedComments[postId];
-    setExpandedComments(prev => ({ ...prev, [postId]: !isExpanded }));
+    const isExpanded = !!expandedComments[postId]
+    setExpandedComments((prev) => ({ ...prev, [postId]: !isExpanded }))
 
     if (!isExpanded && !commentsData[postId]) {
-      setLoadingComments(prev => ({ ...prev, [postId]: true }));
+      setLoadingComments((prev) => ({ ...prev, [postId]: true }))
       try {
-        const comments = await getComments(postId);
-        setCommentsData(prev => ({ ...prev, [postId]: Array.isArray(comments) ? comments : [] }));
+        const comments = await getComments(postId)
+        setCommentsData((prev) => ({
+          ...prev,
+          [postId]: Array.isArray(comments) ? comments : [],
+        }))
       } catch (err) {
-        toast.error("Failed to load comments");
+        toast.error("Failed to load comments")
       } finally {
-        setLoadingComments(prev => ({ ...prev, [postId]: false }));
+        setLoadingComments((prev) => ({ ...prev, [postId]: false }))
       }
     }
-  };
+  }
 
   const handlePostComment = async (postId: string) => {
-    const text = commentInputs[postId]?.trim();
-    if (!text) return;
+    const text = commentInputs[postId]?.trim()
+    if (!text) return
 
-    setIsSubmittingComment(prev => ({ ...prev, [postId]: true }));
-    const toastId = toast.loading("Posting comment...");
-    
-    const parentId = replyTargets[postId]?.id;
+    setIsSubmittingComment((prev) => ({ ...prev, [postId]: true }))
+    const toastId = toast.loading("Posting comment...")
 
-    const res = await addComment(postId, text, parentId);
+    const parentId = replyTargets[postId]?.id
+
+    const res = await addComment(postId, text, parentId)
     if (res?.success) {
-      toast.success("Comment added", { id: toastId });
-      setCommentInputs(prev => ({ ...prev, [postId]: "" }));
-      setReplyTargets(prev => ({ ...prev, [postId]: null }));
-      
-      setPosts((prev) => prev.map(item => item.id === postId ? { ...item, _count: { ...item._count, comments: (item._count?.comments || 0) + 1 }} : item));
+      toast.success("Comment added", { id: toastId })
+      setCommentInputs((prev) => ({ ...prev, [postId]: "" }))
+      setReplyTargets((prev) => ({ ...prev, [postId]: null }))
 
-      const newComment = res.data || { id: Math.random().toString(), content: text, parentId, createdAt: new Date().toISOString(), user: { name: localUser?.name || "You", profileImage: localUser?.profileImage } };
-      setCommentsData(prev => ({ ...prev, [postId]: [...(prev[postId] || []), newComment] }));
+      setPosts((prev) =>
+        prev.map((item) =>
+          item.id === postId
+            ? {
+                ...item,
+                _count: {
+                  ...item._count,
+                  comments: (item._count?.comments || 0) + 1,
+                },
+              }
+            : item
+        )
+      )
+
+      const newComment = res.data || {
+        id: Math.random().toString(),
+        content: text,
+        parentId,
+        createdAt: new Date().toISOString(),
+        user: {
+          name: localUser?.name || "You",
+          profileImage: localUser?.profileImage,
+        },
+      }
+      setCommentsData((prev) => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), newComment],
+      }))
     } else {
-      toast.error(res?.message || "Failed to post comment", { id: toastId });
+      toast.error(res?.message || "Failed to post comment", { id: toastId })
     }
-    
-    setIsSubmittingComment(prev => ({ ...prev, [postId]: false }));
-  };
 
-  const handleToggleLikes = (postId: string) => {
-    setModalLikesOpen(postId);
-  };
+    setIsSubmittingComment((prev) => ({ ...prev, [postId]: false }))
+  }
 
-  // Handler to update the local user state after edit profile success
-  const handleProfileUpdate = (updatedData: any) => {
-    setLocalUser((prev: any) => ({ ...prev, ...updatedData }));
-  };
+  // --- Smart Image Grid Helper ---
+  const renderImageGrid = (images: string[]) => {
+    if (!images || images.length === 0) return null
+
+    const openLightbox = (index: number) => {
+      setLightbox({ isOpen: true, images, currentIndex: index })
+    }
+
+    if (images.length === 1) {
+      return (
+        <div
+          onClick={() => openLightbox(0)}
+          className="mb-4 h-64 w-full cursor-pointer overflow-hidden rounded-2xl sm:h-96"
+        >
+          <img
+            src={images[0]}
+            alt="Post Media"
+            className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+          />
+        </div>
+      )
+    }
+
+    if (images.length === 2) {
+      return (
+        <div className="mb-4 grid grid-cols-2 gap-1.5 overflow-hidden rounded-2xl sm:gap-2">
+          <div
+            onClick={() => openLightbox(0)}
+            className="aspect-[4/5] w-full cursor-pointer"
+          >
+            <img
+              src={images[0]}
+              className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+          </div>
+          <div
+            onClick={() => openLightbox(1)}
+            className="aspect-[4/5] w-full cursor-pointer"
+          >
+            <img
+              src={images[1]}
+              className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    if (images.length === 3) {
+      return (
+        <div className="mb-4 grid grid-cols-2 gap-1.5 overflow-hidden rounded-2xl sm:gap-2">
+          <div
+            onClick={() => openLightbox(0)}
+            className="col-span-2 aspect-[2/1] w-full cursor-pointer"
+          >
+            <img
+              src={images[0]}
+              className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+          </div>
+          <div
+            onClick={() => openLightbox(1)}
+            className="aspect-square w-full cursor-pointer"
+          >
+            <img
+              src={images[1]}
+              className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+          </div>
+          <div
+            onClick={() => openLightbox(2)}
+            className="aspect-square w-full cursor-pointer"
+          >
+            <img
+              src={images[2]}
+              className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="mb-4 grid grid-cols-2 gap-1.5 overflow-hidden rounded-2xl sm:gap-2">
+        <div
+          onClick={() => openLightbox(0)}
+          className="aspect-square w-full cursor-pointer"
+        >
+          <img
+            src={images[0]}
+            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        </div>
+        <div
+          onClick={() => openLightbox(1)}
+          className="aspect-square w-full cursor-pointer"
+        >
+          <img
+            src={images[1]}
+            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        </div>
+        <div
+          onClick={() => openLightbox(2)}
+          className="aspect-square w-full cursor-pointer"
+        >
+          <img
+            src={images[2]}
+            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        </div>
+
+        <div
+          onClick={() => openLightbox(3)}
+          className="group relative aspect-square w-full cursor-pointer overflow-hidden"
+        >
+          <img
+            src={images[3]}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          {images.length > 4 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-3xl font-bold text-white backdrop-blur-[2px] transition-all group-hover:bg-black/40">
+              +{images.length - 4}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-      
+    <div className="min-h-screen bg-slate-50 pb-20 dark:bg-slate-950">
       {/* 1. Cover Photo & Header Profile Section */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto">
-          
-          {/* Cover Image (Gradient fallback if none) */}
-          <div className="h-48 md:h-64 w-full relative bg-slate-100 dark:bg-slate-800 rounded-b-3xl overflow-hidden">
+      <div className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="mx-auto max-w-5xl">
+          <div className="relative h-48 w-full overflow-hidden rounded-b-3xl bg-slate-100 md:h-64 dark:bg-slate-800">
             {localUser?.coverImage ? (
-              <img src={localUser.coverImage} alt="Cover" className="w-full h-full object-cover" />
+              <img
+                src={localUser.coverImage}
+                alt="Cover"
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <div className="w-full h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" />
+              <div className="h-full w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" />
             )}
           </div>
 
-          <div className="px-4 sm:px-8 pb-8 relative">
-            {/* Avatar & Action Buttons */}
-            <div className="flex justify-between items-end -mt-16 md:-mt-20 mb-4 relative z-10">
-              
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 md:border-8 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-md">
+          <div className="relative px-4 pb-8 sm:px-8">
+            <div className="relative z-10 -mt-16 mb-4 flex items-end justify-between md:-mt-20">
+              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md md:h-40 md:w-40 md:border-8 dark:border-slate-900 dark:bg-slate-800">
                 {localUser?.profileImage ? (
-                  <img src={localUser.profileImage} alt={localUser.name} className="w-full h-full object-cover" />
+                  <img
+                    src={localUser.profileImage}
+                    alt={localUser.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 font-black text-5xl">
+                  <div className="flex h-full w-full items-center justify-center bg-indigo-100 text-5xl font-black text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400">
                     {localUser?.name?.charAt(0).toUpperCase() || "U"}
                   </div>
                 )}
               </div>
 
-              <div className="flex gap-3 mb-2 md:mb-6">
-                <CreatePostModal 
+              <div className="mb-2 flex gap-3 md:mb-6">
+                <CreatePostModal
                   customTrigger={
-                    <button className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm shadow-indigo-600/20 cursor-pointer">
+                    <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-colors hover:bg-indigo-700">
                       <Plus className="h-4 w-4" /> Create Post
                     </button>
-                  } 
+                  }
                 />
-                <button 
+                <button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="px-5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-sm transition-colors flex items-center gap-2 cursor-pointer"
+                  className="flex cursor-pointer items-center gap-2 rounded-xl bg-slate-100 px-5 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
                   <Edit3 className="h-4 w-4" /> Edit Profile
                 </button>
               </div>
-
             </div>
 
-            {/* User Info */}
             <div>
-              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <h1 className="flex items-center gap-2 text-2xl font-black text-slate-900 md:text-3xl dark:text-slate-100">
                 {localUser?.name || "Explorer"}
-                {localUser?.isVerified && <ShieldCheck className="h-5 w-5 text-blue-500 shrink-0" />}
+                {localUser?.isVerified && (
+                  <ShieldCheck className="h-5 w-5 shrink-0 text-blue-500" />
+                )}
               </h1>
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> Earth</span>
-                <span className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4" /> Joined {joinedDate}</span>
+
+              <div className="mt-2 flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" /> Earth
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="h-4 w-4" /> Joined {joinedDate}
+                </span>
               </div>
 
-              <p className="mt-4 text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                {localUser?.bio || "This traveler hasn't written a bio yet. They are probably too busy exploring the world!"}
+              <p className="mt-4 max-w-2xl leading-relaxed text-slate-600 dark:text-slate-300">
+                {localUser?.bio || "This traveler hasn't written a bio yet."}
               </p>
 
-              {/* Stats */}
-              <div className="flex gap-6 mt-6">
-                <div className="flex gap-1.5 cursor-pointer hover:underline decoration-slate-300">
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{localUser?.followingCount || 0}</span>
+              <div className="mt-6 flex gap-6">
+                <div className="flex cursor-pointer gap-1.5 decoration-slate-300 hover:underline">
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {localUser?.followingCount || 0}
+                  </span>
                   <span className="text-slate-500">Following</span>
                 </div>
-                <div className="flex gap-1.5 cursor-pointer hover:underline decoration-slate-300">
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{localUser?.followersCount || 0}</span>
+                <div className="flex cursor-pointer gap-1.5 decoration-slate-300 hover:underline">
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {localUser?.followersCount || 0}
+                  </span>
                   <span className="text-slate-500">Followers</span>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Tabs */}
-          <div className="flex overflow-x-auto hide-scrollbar px-2 sm:px-8 border-t border-slate-100 dark:border-slate-800/50 w-full">
+
+          <div className="hide-scrollbar flex w-full overflow-x-auto border-t border-slate-100 px-2 sm:px-8 dark:border-slate-800/50">
             {tabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              const Icon = tab.icon;
+              const isActive = activeTab === tab.id
+              const Icon = tab.icon
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center justify-center flex-col md:flex-row flex-1 md:flex-none gap-1 sm:gap-2 px-1 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-sm font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                    isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                  className={`relative flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 px-1 py-3 text-[10px] font-bold whitespace-nowrap transition-colors sm:gap-2 sm:px-6 sm:py-4 sm:text-sm md:flex-none md:flex-row ${
+                    isActive
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
                   }`}
                 >
-                  <Icon className="h-4 w-4 sm:h-4 sm:w-4 shrink-0" />
+                  <Icon className="h-4 w-4 shrink-0" />
                   <span className="truncate">{tab.label}</span>
                   {isActive && (
                     <motion.div
                       layoutId="profile-tab-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 dark:bg-indigo-400 rounded-t-full"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className="absolute right-0 bottom-0 left-0 h-1 rounded-t-full bg-indigo-600 dark:bg-indigo-400"
                     />
                   )}
                 </button>
-              );
+              )
             })}
           </div>
         </div>
       </div>
 
-      {/* 2. Main Content Area based on Tabs */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-8">
+      {/* 2. Main Content Area */}
+      <div className="mx-auto max-w-5xl px-4 pt-8 sm:px-8">
         <motion.div
           key={activeTab}
           variants={containerVariants}
@@ -236,171 +495,376 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
           animate="visible"
         >
           {activeTab === "posts" && (
-            <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+            <div className="mx-auto flex max-w-2xl flex-col gap-6">
               {posts && posts.length > 0 ? (
-                posts.map((post) => (
-                  <motion.article 
-                    variants={itemVariants} 
-                    key={post.id} 
-                    className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm"
+                posts.map((item) => (
+                  <motion.article
+                    key={item.id}
+                    variants={itemVariants}
+                    className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
                   >
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="h-10 w-10 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-100 dark:border-slate-700 shrink-0">
-                        {localUser.profileImage ? (
-                          <img src={localUser.profileImage} alt={localUser.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-slate-500 font-bold">
-                            {localUser.name?.charAt(0).toUpperCase() || 'U'}
+                    {item.feedType === "PACKAGE" ? (
+                      /* --- PACKAGE TIMELINE CARD --- */
+                      <>
+                        <div className="mb-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-indigo-900 font-bold text-white shadow-sm dark:border-slate-700">
+                              {item.author?.profileImage ? (
+                                <img
+                                  src={item.author.profileImage}
+                                  alt={item.author.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : item.author?.name ? (
+                                item.author.name.substring(0, 1).toUpperCase()
+                              ) : (
+                                "A"
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1">
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                  {item.author?.name || "Agency"}
+                                </h4>
+                                <CheckCircle2
+                                  className="h-4 w-4 text-blue-500"
+                                  fill="currentColor"
+                                />
+                              </div>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Agency Spotlight • Sponsored
+                              </p>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{localUser.name}</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {formatTime(post.createdAt)} {post.location && ` • ${post.location}`}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4 whitespace-pre-wrap">
-                      {post.content}
-                    </p>
+                          {item.author?.id && following.has(item.author.id) ? (
+                            <Link href={`/agencies/${item.author.id}`}>
+                              <button className="cursor-pointer rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                                View
+                              </button>
+                            </Link>
+                          ) : (
+                            <FollowButton
+                              targetUserId={item.author?.id}
+                              initialIsFollowing={false}
+                              variant="pill"
+                              targetUserName={item.author?.name}
+                              onFollowChange={(isNowFollowing) => {
+                                if (isNowFollowing && item.author?.id) {
+                                  setFollowing((prev) =>
+                                    new Set(prev).add(item.author.id)
+                                  )
+                                }
+                              }}
+                            />
+                          )}
+                        </div>
 
-                    {post.images && post.images.length > 0 && (
-                      <div className={`grid gap-2 ${post.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                        {post.images.map((img: string, idx: number) => (
-                          <div key={idx} className={`h-64 sm:h-80 bg-slate-100 dark:bg-slate-800 overflow-hidden ${
-                            post.images.length === 1 ? 'rounded-2xl' : 
-                            idx === 0 ? 'rounded-l-2xl rounded-r-sm' : 
-                            idx === 1 ? 'rounded-r-2xl rounded-l-sm' : 'rounded-xl'
-                          }`}>
-                            <img src={img} alt="Post Media" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                        {/* ✅ SMART IMAGE GRID FOR PACKAGE */}
+                        {renderImageGrid(item.images)}
+
+                        <h3 className="mb-2 truncate text-lg font-bold text-slate-900 dark:text-slate-100">
+                          {item.content?.split("\n\n")[0] ||
+                            "Exclusive Tour Package"}
+                        </h3>
+                        <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                          {item.content?.split("\n\n")[1] || item.content}
+                        </p>
+
+                        <button className="w-full cursor-pointer rounded-xl bg-rose-800 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-900">
+                          View Expedition Details
+                        </button>
+                      </>
+                    ) : (
+                      /* --- TRAVELER POST TIMELINE CARD --- */
+                      <>
+                        <div className="mb-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 overflow-hidden rounded-full border border-slate-100 bg-slate-200 dark:border-slate-700 dark:bg-slate-800">
+                              {item.author?.profileImage ? (
+                                <img
+                                  src={item.author.profileImage}
+                                  alt={item.author.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-slate-200 font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                  {item.author?.name
+                                    ? item.author.name
+                                        .substring(0, 1)
+                                        .toUpperCase()
+                                    : "U"}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {item.author?.name || "Traveler"}
+                              </h4>
+                              <p className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                {formatTime(item.createdAt)}{" "}
+                                {item.location && (
+                                  <>
+                                    <MapPin className="ml-1 inline h-3 w-3" />{" "}
+                                    {item.location}
+                                  </>
+                                )}
+                              </p>
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                          <button className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <MoreHorizontal className="h-5 w-5" />
+                          </button>
+                        </div>
+
+                        <p className="mb-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-300">
+                          {item.content}
+                        </p>
+
+                        {/* ✅ SMART IMAGE GRID FOR TRAVELER POST */}
+                        {renderImageGrid(item.images)}
+                      </>
                     )}
-                    
-                    {/* Unified Action Bar style from MainFeed */}
-                    <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/50">
+
+                    {/* Unified Action Bar (Applies to both PACKAGE and POST) */}
+                    <div
+                      className={`mt-4 flex items-center justify-between pt-3 ${item.feedType === "PACKAGE" ? "border-t border-slate-100 dark:border-slate-800/50" : ""}`}
+                    >
                       <div className="flex items-center gap-6">
-                        <button onClick={() => handleToggleLikes(post.id)} className={`flex items-center gap-2 transition-colors cursor-pointer group text-slate-500 hover:text-rose-600`}>
-                          <Heart className="h-5 w-5 group-hover:scale-110 transition-transform" fill="none" /> 
-                          <span className="text-sm font-medium">{post._count?.likes || 0}</span>
+                        <button
+                          onClick={() => handleToggleLike(item.id)}
+                          className={`group flex cursor-pointer items-center gap-2 transition-colors ${likedPosts.has(item.id) ? "text-rose-600" : "text-slate-500 hover:text-rose-600"}`}
+                        >
+                          <Heart
+                            className="h-5 w-5 transition-transform group-hover:scale-110"
+                            fill={
+                              likedPosts.has(item.id) ? "currentColor" : "none"
+                            }
+                          />
+                          <span className="text-sm font-medium">
+                            {item._count?.likes || 0}
+                          </span>
                         </button>
-                        <button onClick={() => handleToggleComments(post.id)} className={`flex items-center gap-2 transition-colors cursor-pointer group ${expandedComments[post.id] ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'}`}>
-                          <MessageCircle className="h-5 w-5 group-hover:scale-110 transition-transform" fill={expandedComments[post.id] ? "currentColor" : "none"} /> 
-                          <span className="text-sm font-medium">{post._count?.comments || 0}</span>
+                        <button
+                          onClick={() => handleToggleComments(item.id)}
+                          className={`group flex cursor-pointer items-center gap-2 transition-colors ${expandedComments[item.id] ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600"}`}
+                        >
+                          <MessageCircle
+                            className="h-5 w-5 transition-transform group-hover:scale-110"
+                            fill={
+                              expandedComments[item.id]
+                                ? "currentColor"
+                                : "none"
+                            }
+                          />
+                          <span className="text-sm font-medium">
+                            {item._count?.comments || 0}
+                          </span>
+                        </button>
+                        <button className="cursor-pointer text-slate-500 transition-colors hover:text-indigo-600">
+                          <Share2 className="h-5 w-5" />
                         </button>
                       </div>
+                      <button className="cursor-pointer text-slate-500 transition-colors hover:text-indigo-900">
+                        <Bookmark className="h-5 w-5" />
+                      </button>
                     </div>
 
                     {/* Expandable Comments Section */}
-                    {expandedComments[post.id] && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {loadingComments[post.id] ? (
+                    {expandedComments[item.id] && (
+                      <div className="mt-4 flex animate-in flex-col gap-4 border-t border-slate-100 pt-4 duration-200 fade-in slide-in-from-top-2 dark:border-slate-800">
+                        {loadingComments[item.id] ? (
                           <div className="flex items-center justify-center py-4">
-                            <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
+                            <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
                           </div>
-                        ) : commentsData[post.id]?.length === 0 ? (
-                          <p className="text-xs text-slate-500 text-center py-2 bg-slate-50 dark:bg-slate-800/30 rounded-xl">No comments yet. Start the conversation!</p>
+                        ) : commentsData[item.id]?.length === 0 ? (
+                          <p className="rounded-xl bg-slate-50 py-2 text-center text-xs text-slate-500 dark:bg-slate-800/30">
+                            No comments yet. Start the conversation!
+                          </p>
                         ) : (
-                          <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                            {(commentsData[post.id]?.filter(c => !c.parentId) || []).map((rootComment: any) => (
-                              <div key={rootComment.id} className="flex flex-col gap-2">
-                                 {/* Root Comment Container */}
-                                 <div className="flex gap-2.5 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
-                                   <div className="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-600">
-                                     {rootComment.user?.profileImage ? (
-                                       <img src={rootComment.user.profileImage} alt={rootComment.user.name} className="w-full h-full object-cover" />
-                                     ) : (
-                                       <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{rootComment.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
-                                     )}
-                                   </div>
-                                   <div className="flex flex-col min-w-0">
-                                     <div className="flex items-center gap-2">
-                                       <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{rootComment.user?.name || "Traveler"}</span>
-                                       <span className="text-[10px] text-slate-400">{formatTime(rootComment.createdAt)}</span>
-                                     </div>
-                                     <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
-                                       {rootComment.text || rootComment.content || rootComment.textcontent}
-                                     </p>
-                                     <div className="flex items-center gap-3 mt-1.5 pt-0.5">
-                                        <button 
-                                          onClick={() => setReplyTargets(prev => ({ ...prev, [post.id]: { id: rootComment.id, name: rootComment.user?.name || 'User' } }))}
-                                          className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                          <div className="custom-scrollbar flex max-h-60 flex-col gap-3 overflow-y-auto pr-2">
+                            {(
+                              commentsData[item.id]?.filter(
+                                (c) => !c.parentId
+                              ) || []
+                            ).map((rootComment: any) => (
+                              <div
+                                key={rootComment.id}
+                                className="flex flex-col gap-2"
+                              >
+                                {/* Root Comment Container */}
+                                <div className="flex gap-2.5 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/50">
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
+                                    {rootComment.user?.profileImage ? (
+                                      <img
+                                        src={rootComment.user.profileImage}
+                                        alt={rootComment.user.name}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                        {rootComment.user?.name
+                                          ?.charAt(0)
+                                          .toUpperCase() || "U"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex min-w-0 flex-col">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                                        {rootComment.user?.name || "Traveler"}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400">
+                                        {formatTime(rootComment.createdAt)}
+                                      </span>
+                                    </div>
+                                    <p className="mt-0.5 text-xs break-words text-slate-600 dark:text-slate-300">
+                                      {rootComment.text ||
+                                        rootComment.content ||
+                                        rootComment.textcontent}
+                                    </p>
+                                    <div className="mt-1.5 flex items-center gap-3 pt-0.5">
+                                      <button
+                                        onClick={() =>
+                                          setReplyTargets((prev) => ({
+                                            ...prev,
+                                            [item.id]: {
+                                              id: rootComment.id,
+                                              name:
+                                                rootComment.user?.name ||
+                                                "User",
+                                            },
+                                          }))
+                                        }
+                                        className="cursor-pointer text-[10px] font-bold text-slate-400 transition-colors hover:text-indigo-600"
+                                      >
+                                        Reply
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Child Replies */}
+                                {(
+                                  commentsData[item.id]?.filter(
+                                    (child) => child.parentId === rootComment.id
+                                  ) || []
+                                ).map((reply: any) => (
+                                  <div
+                                    key={reply.id}
+                                    className="relative flex gap-2.5 py-1 pr-2 pl-10"
+                                  >
+                                    {/* Small L curve to show nesting visually */}
+                                    <div className="absolute top-0 bottom-4 left-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+                                    <div className="absolute bottom-4 left-6 h-px w-3 bg-slate-200 dark:bg-slate-700"></div>
+
+                                    <div className="z-10 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
+                                      {reply.user?.profileImage ? (
+                                        <img
+                                          src={reply.user.profileImage}
+                                          alt={reply.user.name}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                          {reply.user?.name
+                                            ?.charAt(0)
+                                            .toUpperCase() || "U"}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex min-w-0 flex-col">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                                          {reply.user?.name || "Traveler"}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400">
+                                          {formatTime(reply.createdAt)}
+                                        </span>
+                                      </div>
+                                      <p className="mt-0.5 text-xs break-words text-slate-600 dark:text-slate-300">
+                                        {reply.text ||
+                                          reply.content ||
+                                          reply.textcontent}
+                                      </p>
+                                      <div className="mt-1.5 flex items-center gap-3 pt-0.5">
+                                        <button
+                                          onClick={() =>
+                                            setReplyTargets((prev) => ({
+                                              ...prev,
+                                              [item.id]: {
+                                                id: rootComment.id,
+                                                name:
+                                                  reply.user?.name || "User",
+                                              },
+                                            }))
+                                          }
+                                          className="cursor-pointer text-[10px] font-bold text-slate-400 transition-colors hover:text-indigo-600"
                                         >
                                           Reply
                                         </button>
-                                     </div>
-                                   </div>
-                                 </div>
-                                 
-                                 {/* Child Replies */}
-                                 {(commentsData[post.id]?.filter(child => child.parentId === rootComment.id) || []).map((reply: any) => (
-                                   <div key={reply.id} className="flex gap-2.5 pl-10 pr-2 py-1 relative">
-                                     {/* Small L curve to show nesting visually */}
-                                     <div className="absolute left-6 top-0 bottom-4 w-px bg-slate-200 dark:bg-slate-700"></div>
-                                     <div className="absolute left-6 bottom-4 w-3 h-px bg-slate-200 dark:bg-slate-700"></div>
-                                     
-                                     <div className="h-6 w-6 bg-slate-200 dark:bg-slate-700 rounded-full shrink-0 flex items-center justify-center overflow-hidden z-10 border border-slate-100 dark:border-slate-600">
-                                       {reply.user?.profileImage ? (
-                                         <img src={reply.user.profileImage} alt={reply.user.name} className="w-full h-full object-cover" />
-                                       ) : (
-                                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{reply.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
-                                       )}
-                                     </div>
-                                     <div className="flex flex-col min-w-0">
-                                       <div className="flex items-center gap-2">
-                                         <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{reply.user?.name || "Traveler"}</span>
-                                         <span className="text-[10px] text-slate-400">{formatTime(reply.createdAt)}</span>
-                                       </div>
-                                       <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 break-words">
-                                         {reply.text || reply.content || reply.textcontent}
-                                       </p>
-                                       <div className="flex items-center gap-3 mt-1.5 pt-0.5">
-                                          <button 
-                                            onClick={() => setReplyTargets(prev => ({ ...prev, [post.id]: { id: rootComment.id, name: reply.user?.name || 'User' } }))}
-                                            className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
-                                          >
-                                            Reply
-                                          </button>
-                                       </div>
-                                     </div>
-                                   </div>
-                                 ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             ))}
                           </div>
                         )}
 
                         {/* Comment Input Bar */}
-                        <div className="flex flex-col gap-2 mt-2">
-                          {replyTargets[post.id] && (
-                             <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-800">
-                               <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                                 Replying to @{replyTargets[post.id]?.name}
-                               </span>
-                               <button onClick={() => setReplyTargets(prev => ({ ...prev, [post.id]: null }))} className="text-indigo-400 hover:text-indigo-700 cursor-pointer text-xs font-bold">
-                                 Cancel
-                               </button>
-                             </div>
+                        <div className="mt-2 flex flex-col gap-2">
+                          {replyTargets[item.id] && (
+                            <div className="flex items-center justify-between rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5 dark:border-indigo-800 dark:bg-indigo-900/30">
+                              <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                                Replying to @{replyTargets[item.id]?.name}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  setReplyTargets((prev) => ({
+                                    ...prev,
+                                    [item.id]: null,
+                                  }))
+                                }
+                                className="cursor-pointer text-xs font-bold text-indigo-400 hover:text-indigo-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           )}
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
-                              placeholder={replyTargets[post.id] ? `Write a reply...` : `Write a comment...`}
-                              value={commentInputs[post.id] || ""}
-                              onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
-                              onKeyDown={(e) => e.key === 'Enter' && handlePostComment(post.id)}
-                              className="flex-1 bg-slate-100 dark:bg-slate-800 border-none px-4 py-2.5 rounded-full text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                              disabled={isSubmittingComment[post.id]}
+                              placeholder={
+                                replyTargets[item.id]
+                                  ? `Write a reply...`
+                                  : `Write a comment...`
+                              }
+                              value={commentInputs[item.id] || ""}
+                              onChange={(e) =>
+                                setCommentInputs((prev) => ({
+                                  ...prev,
+                                  [item.id]: e.target.value,
+                                }))
+                              }
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handlePostComment(item.id)
+                              }
+                              className="flex-1 rounded-full border-none bg-slate-100 px-4 py-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500/50 focus:outline-none dark:bg-slate-800 dark:text-slate-200"
+                              disabled={isSubmittingComment[item.id]}
                             />
-                            <button 
-                              onClick={() => handlePostComment(post.id)}
-                              disabled={!commentInputs[post.id]?.trim() || isSubmittingComment[post.id]}
-                              className="p-2.5 rounded-full bg-indigo-600 text-white disabled:opacity-50 hover:bg-indigo-700 transition-colors shrink-0 cursor-pointer"
+                            <button
+                              onClick={() => handlePostComment(item.id)}
+                              disabled={
+                                !commentInputs[item.id]?.trim() ||
+                                isSubmittingComment[item.id]
+                              }
+                              className="shrink-0 cursor-pointer rounded-full bg-indigo-600 p-2.5 text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
                             >
-                              {isSubmittingComment[post.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 -ml-0.5" />}
+                              {isSubmittingComment[item.id] ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="-ml-0.5 h-4 w-4" />
+                              )}
                             </button>
                           </div>
                         </div>
@@ -409,10 +873,14 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
                   </motion.article>
                 ))
               ) : (
-                <motion.div variants={itemVariants} className="col-span-full py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                  <Grid className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No posts yet</h3>
-                  <p className="text-slate-500">Share your first travel memory!</p>
+                <motion.div
+                  variants={itemVariants}
+                  className="rounded-3xl border-2 border-dashed border-slate-200 py-20 text-center dark:border-slate-800"
+                >
+                  <Grid className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    No posts yet
+                  </h3>
                 </motion.div>
               )}
             </div>
@@ -420,50 +888,85 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
 
           {activeTab === "bookings" && (
             <div className="flex flex-col gap-4">
-              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                <Map className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No journeys</h3>
-                <p className="text-slate-500">You haven't booked any packages yet.</p>
+              <motion.div
+                variants={itemVariants}
+                className="rounded-3xl border-2 border-dashed border-slate-200 py-20 text-center dark:border-slate-800"
+              >
+                <Map className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  No journeys
+                </h3>
+                <p className="text-slate-500">
+                  You haven't booked any packages yet.
+                </p>
               </motion.div>
             </div>
           )}
 
           {activeTab === "reviews" && (
             <div className="flex flex-col gap-4">
-              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                <Star className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No reviews</h3>
-                <p className="text-slate-500">Review your trips after you complete them.</p>
+              <motion.div
+                variants={itemVariants}
+                className="rounded-3xl border-2 border-dashed border-slate-200 py-20 text-center dark:border-slate-800"
+              >
+                <Star className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  No reviews
+                </h3>
+                <p className="text-slate-500">
+                  Review your trips after you complete them.
+                </p>
               </motion.div>
             </div>
           )}
 
           {activeTab === "discover" && (
             <div className="flex flex-col gap-4">
-              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                <Compass className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Discover</h3>
-                <p className="text-slate-500">Find new places and agencies to explore.</p>
+              <motion.div
+                variants={itemVariants}
+                className="rounded-3xl border-2 border-dashed border-slate-200 py-20 text-center dark:border-slate-800"
+              >
+                <Compass className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Discover
+                </h3>
+                <p className="text-slate-500">
+                  Find new places and agencies to explore.
+                </p>
               </motion.div>
             </div>
           )}
 
           {activeTab === "saved" && (
             <div className="flex flex-col gap-4">
-              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                <Bookmark className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">No saved items</h3>
-                <p className="text-slate-500">Save your favorite posts and packages here.</p>
+              <motion.div
+                variants={itemVariants}
+                className="rounded-3xl border-2 border-dashed border-slate-200 py-20 text-center dark:border-slate-800"
+              >
+                <Bookmark className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  No saved items
+                </h3>
+                <p className="text-slate-500">
+                  Save your favorite posts and packages here.
+                </p>
               </motion.div>
             </div>
           )}
 
           {activeTab === "settings" && (
             <div className="flex flex-col gap-4">
-              <motion.div variants={itemVariants} className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                <Settings className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Settings</h3>
-                <p className="text-slate-500">Manage your account preferences here.</p>
+              <motion.div
+                variants={itemVariants}
+                className="rounded-3xl border-2 border-dashed border-slate-200 py-20 text-center dark:border-slate-800"
+              >
+                <Settings className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Settings
+                </h3>
+                <p className="text-slate-500">
+                  Manage your account preferences here.
+                </p>
               </motion.div>
             </div>
           )}
@@ -471,73 +974,84 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
       </div>
 
       {/* Edit Profile Modal */}
-      <EditProfileModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        user={localUser} 
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        user={localUser}
         onProfileUpdate={handleProfileUpdate}
       />
 
-      {/* Likes Modal */}
+      {/* Fullscreen Lightbox Viewer Modal */}
       <AnimatePresence>
-        {modalLikesOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm" onClick={() => setModalLikesOpen(null)}>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        {lightbox.isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
+            onClick={() => setLightbox({ ...lightbox, isOpen: false })}
+          >
+            <div className="absolute top-0 right-0 left-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent p-4">
+              <span className="text-sm font-medium tracking-wide text-white/80">
+                {lightbox.currentIndex + 1} / {lightbox.images.length}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setLightbox({ ...lightbox, isOpen: false })
+                }}
+                className="cursor-pointer rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {lightbox.images.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setLightbox({
+                    ...lightbox,
+                    currentIndex:
+                      (lightbox.currentIndex - 1 + lightbox.images.length) %
+                      lightbox.images.length,
+                  })
+                }}
+                className="absolute left-4 z-10 cursor-pointer rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+              >
+                <ChevronLeft className="h-8 w-8" />
+              </button>
+            )}
+
+            <motion.img
+              key={lightbox.currentIndex}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden mb-16 shadow-2xl w-full max-w-md max-h-[70vh] flex flex-col border border-slate-100 dark:border-slate-800"
+              src={lightbox.images[lightbox.currentIndex]}
+              className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
               onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-rose-500" fill="currentColor" /> Reactions
-                </h3>
-                <button 
-                  onClick={() => setModalLikesOpen(null)}
-                  className="p-2 -mr-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <div className="overflow-y-auto p-2 sm:p-4 custom-scrollbar">
-                {(() => {
-                  const post = posts.find((p: any) => p.id === modalLikesOpen);
-                  if (!post || !post.likes || post.likes.length === 0) {
-                    return (
-                      <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-3">
-                         <Heart className="h-10 w-10 opacity-20" />
-                         <p className="text-sm font-medium">No likes yet.</p>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="flex flex-col gap-1">
-                      {post.likes.map((like: any) => (
-                        <div key={like.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <div className="h-12 w-12 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden shrink-0 border border-slate-100 dark:border-slate-800">
-                            {like.user?.profileImage ? (
-                              <img src={like.user.profileImage} alt={like.user.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-base font-bold text-slate-500 dark:text-slate-400">{like.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
-                            )}
-                          </div>
-                          <div className="flex flex-col min-w-0 flex-1">
-                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{like.user?.name || "Traveler"}</span>
-                            <span className="text-xs text-slate-500 truncate">Liked {formatTime(like.createdAt || post.createdAt)}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </motion.div>
-          </div>
+            />
+
+            {lightbox.images.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setLightbox({
+                    ...lightbox,
+                    currentIndex:
+                      (lightbox.currentIndex + 1) % lightbox.images.length,
+                  })
+                }}
+                className="absolute right-4 z-10 cursor-pointer rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+              >
+                <ChevronRight className="h-8 w-8" />
+              </button>
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
-  );
+  )
 }
