@@ -1,5 +1,5 @@
 import { AgencyListClient } from "@/components/agency/AgencyListClient";
-import { allAgencyForUser } from "@/services/auth.service";
+import { allAgencyForUser } from "@/services/agency.service";
 
 export const metadata = {
   title: "Agencies | Triplance",

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, CalendarDays, Edit3, Grid, Map, Star, ShieldCheck, Plus, Heart, MessageCircle, X, Loader2, Send, Compass, Bookmark, Settings } from "lucide-react";
 import { CreatePostModal } from "@/components/feed/CreatePostModal";
+import { EditProfileModal } from "./EditProfileModal"; // <-- Import the new modal
 import { getComments, addComment } from "@/services/comment.service";
 import { toast } from "sonner";
 
@@ -19,6 +20,10 @@ const itemVariants = {
 };
 
 export function ProfileClient({ user, initialPosts = [] }: { user: any, initialPosts?: any[] }) {
+  // Local state for optimistic UI updates after editing profile
+  const [localUser, setLocalUser] = useState(user);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   const [activeTab, setActiveTab] = useState("posts");
 
   const tabs = [
@@ -30,8 +35,8 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
-  const joinedDate = user?.createdAt 
-    ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const joinedDate = localUser?.createdAt 
+    ? new Date(localUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : "Recently";
 
   // Helper to nicely format time
@@ -97,7 +102,7 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
       
       setPosts((prev) => prev.map(item => item.id === postId ? { ...item, _count: { ...item._count, comments: (item._count?.comments || 0) + 1 }} : item));
 
-      const newComment = res.data || { id: Math.random().toString(), content: text, parentId, createdAt: new Date().toISOString(), user: { name: user?.name || "You", profileImage: user?.profileImage } };
+      const newComment = res.data || { id: Math.random().toString(), content: text, parentId, createdAt: new Date().toISOString(), user: { name: localUser?.name || "You", profileImage: localUser?.profileImage } };
       setCommentsData(prev => ({ ...prev, [postId]: [...(prev[postId] || []), newComment] }));
     } else {
       toast.error(res?.message || "Failed to post comment", { id: toastId });
@@ -110,6 +115,11 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
     setModalLikesOpen(postId);
   };
 
+  // Handler to update the local user state after edit profile success
+  const handleProfileUpdate = (updatedData: any) => {
+    setLocalUser((prev: any) => ({ ...prev, ...updatedData }));
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
       
@@ -119,8 +129,8 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
           
           {/* Cover Image (Gradient fallback if none) */}
           <div className="h-48 md:h-64 w-full relative bg-slate-100 dark:bg-slate-800 rounded-b-3xl overflow-hidden">
-            {user?.coverImage ? (
-              <img src={user.coverImage} alt="Cover" className="w-full h-full object-cover" />
+            {localUser?.coverImage ? (
+              <img src={localUser.coverImage} alt="Cover" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" />
             )}
@@ -131,11 +141,11 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
             <div className="flex justify-between items-end -mt-16 md:-mt-20 mb-4 relative z-10">
               
               <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 md:border-8 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-md">
-                {user?.profileImage ? (
-                  <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                {localUser?.profileImage ? (
+                  <img src={localUser.profileImage} alt={localUser.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 font-black text-5xl">
-                    {user?.name?.charAt(0).toUpperCase() || "U"}
+                    {localUser?.name?.charAt(0).toUpperCase() || "U"}
                   </div>
                 )}
               </div>
@@ -148,7 +158,10 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
                     </button>
                   } 
                 />
-                <button className="px-5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-sm transition-colors flex items-center gap-2 cursor-pointer">
+                <button 
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="px-5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-sm transition-colors flex items-center gap-2 cursor-pointer"
+                >
                   <Edit3 className="h-4 w-4" /> Edit Profile
                 </button>
               </div>
@@ -158,8 +171,8 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
             {/* User Info */}
             <div>
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                {user?.name || "Explorer"}
-                {user?.isVerified && <ShieldCheck className="h-5 w-5 text-blue-500 shrink-0" />}
+                {localUser?.name || "Explorer"}
+                {localUser?.isVerified && <ShieldCheck className="h-5 w-5 text-blue-500 shrink-0" />}
               </h1>
               
               <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
@@ -168,17 +181,17 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
               </div>
 
               <p className="mt-4 text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                {user?.bio || "This traveler hasn't written a bio yet. They are probably too busy exploring the world!"}
+                {localUser?.bio || "This traveler hasn't written a bio yet. They are probably too busy exploring the world!"}
               </p>
 
               {/* Stats */}
               <div className="flex gap-6 mt-6">
                 <div className="flex gap-1.5 cursor-pointer hover:underline decoration-slate-300">
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{user?.followingCount || 0}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{localUser?.followingCount || 0}</span>
                   <span className="text-slate-500">Following</span>
                 </div>
                 <div className="flex gap-1.5 cursor-pointer hover:underline decoration-slate-300">
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{user?.followersCount || 0}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{localUser?.followersCount || 0}</span>
                   <span className="text-slate-500">Followers</span>
                 </div>
               </div>
@@ -233,16 +246,16 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="h-10 w-10 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-100 dark:border-slate-700 shrink-0">
-                        {user.profileImage ? (
-                          <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                        {localUser.profileImage ? (
+                          <img src={localUser.profileImage} alt={localUser.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center text-slate-500 font-bold">
-                            {user.name?.charAt(0).toUpperCase() || 'U'}
+                            {localUser.name?.charAt(0).toUpperCase() || 'U'}
                           </div>
                         )}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{user.name}</h4>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{localUser.name}</h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {formatTime(post.createdAt)} {post.location && ` • ${post.location}`}
                         </p>
@@ -456,6 +469,14 @@ export function ProfileClient({ user, initialPosts = [] }: { user: any, initialP
           )}
         </motion.div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        user={localUser} 
+        onProfileUpdate={handleProfileUpdate}
+      />
 
       {/* Likes Modal */}
       <AnimatePresence>

@@ -2,6 +2,7 @@
 import { jwtDecode } from "jwt-decode";
 import { FieldValues } from "react-hook-form";
 import { cookies } from "next/headers";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { env } from "@/lib/env";
 
 export const loginUser = async (userData: FieldValues) => {
@@ -128,28 +129,33 @@ export const getSuggestedUsers = async () => {
   }
 };
 
-export const allAgencyForUser = async (search?: string, page: number = 1, limit: number = 20) => {
-  const storeCookie = await cookies();
-  const token = storeCookie.get("token")?.value;
-  try {
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    if (search) queryParams.append('search', search);
 
-    const res = await fetch(`${env.API_URL}/users/agencies?${queryParams.toString()}`, {
-      method: "GET",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-      cache: "no-store"
+export const updateUserProfile = async (userId: string, payload: any) => {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    const res = await fetch(`${env.API_URL}/users/${userId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
+
     const result = await res.json();
-    return result.success ? result : { data: [], meta: { page, limit, total: 0 } };
-  } catch (error) {
-    console.error("Error fetching all agencies:", error);
-    return { data: [], meta: { page, limit, total: 0 } };
+    
+    if (result.success) {
+      revalidatePath('/profile', 'page'); 
+    }
+
+    return result;
+  } catch (error: any) {
+    console.error("Error updating profile:", error);
+    return { success: false, message: error.message || "Failed to update profile" };
   }
 };
+
 
 export const logoutUser = async () => {
   const storeCookie = await cookies();
