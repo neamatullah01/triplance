@@ -127,3 +127,16 @@
     @apply font-sans;
     }
 }
+
+/* --- Hide Scrollbar for Sidebars --- */
+.custom-scrollbar {
+  /* Firefox */
+  scrollbar-width: none; 
+  /* Internet Explorer 10+ */
+  -ms-overflow-style: none; 
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; 
+}

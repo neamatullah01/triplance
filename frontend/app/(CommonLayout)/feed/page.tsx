@@ -7,6 +7,7 @@ import { Building2, ArrowRight } from "lucide-react";
 
 export default async function FeedPage() {
   const user = await getUser();
+  
   return (
     <div className="w-full max-w-7xl mx-auto pt-6 pb-20 lg:pb-6 px-4 sm:px-6 lg:px-8">
       {/* 12-Column Grid Layout */}
@@ -14,7 +15,8 @@ export default async function FeedPage() {
         
         {/* Left Sidebar (Hidden on Mobile) */}
         <div className="hidden lg:block lg:col-span-3">
-          <div className="sticky top-5">
+          {/* ✅ FIX: Added fixed height and overflow-y-auto for independent scrolling */}
+          <div className="sticky top-5 h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar pb-6">
             {user ? (
               <LeftSidebar />
             ) : (
@@ -70,14 +72,15 @@ export default async function FeedPage() {
           </div>
         </div>
 
-        {/* Main Content (Scrollable) */}
+        {/* Main Content (Scrollable naturally by the browser) */}
         <div className="col-span-1 lg:col-span-6">
           <MainFeed />
         </div>
 
         {/* Right Sidebar (Hidden on Mobile) */}
         <div className="hidden lg:block lg:col-span-3">
-          <div className="sticky top-5">
+          {/* ✅ FIX: Added fixed height and overflow-y-auto for independent scrolling */}
+          <div className="sticky top-5 h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar pb-6">
             <RightSidebar />
           </div>
         </div>
