@@ -1,56 +1,55 @@
-import express from 'express';
-import auth from '../../middlewares/auth';
-import validateRequest from '../../middlewares/validateRequest';
-import { UserValidation } from './user.validation';
-import { UserController } from './user.controller';
-import { upload } from '../../utils/multer';
+import express from "express";
+import auth from "../../middlewares/auth";
+import validateRequest from "../../middlewares/validateRequest";
+import { UserValidation } from "./user.validation";
+import { UserController } from "./user.controller";
 
 const router = express.Router();
 
-router.get('/', auth('ADMIN'), UserController.getAllUsers);
+router.get("/", auth("ADMIN"), UserController.getAllUsers);
 
 router.get(
-  '/suggestions',
-  auth('TRAVELER', 'AGENCY', 'ADMIN'),
-  UserController.getSuggestedUsers
+  "/suggestions",
+  auth("TRAVELER", "AGENCY", "ADMIN"),
+  UserController.getSuggestedUsers,
 );
 
 router.get(
-  '/agencies',
-  auth('TRAVELER', 'AGENCY', 'ADMIN'),
-  UserController.getAllAgenciesForUser
+  "/agencies",
+  auth("TRAVELER", "AGENCY", "ADMIN"),
+  UserController.getAllAgenciesForUser,
 );
 
-router.get('/:id', UserController.getUserById);
+router.get("/:id", UserController.getUserById);
 
 router.patch(
-  '/:id',
-  auth('ADMIN', 'TRAVELER', 'AGENCY'),
+  "/:id",
+  auth("ADMIN", "TRAVELER", "AGENCY"),
   validateRequest(UserValidation.updateUserValidationSchema),
-  UserController.updateProfile
+  UserController.updateProfile,
 );
 
 router.patch(
-  '/:id',
-  auth('TRAVELER', 'AGENCY', 'ADMIN'),
+  "/:id",
+  auth("TRAVELER", "AGENCY", "ADMIN"),
   validateRequest(UserValidation.updateUserValidationSchema), // Zod is happy again!
-  UserController.updateProfile
+  UserController.updateProfile,
 );
 
-router.delete('/:id', auth('ADMIN'), UserController.deleteUser);
+router.delete("/:id", auth("ADMIN"), UserController.deleteUser);
 
 router.patch(
-  '/:id/ban',
-  auth('ADMIN'),
+  "/:id/ban",
+  auth("ADMIN"),
   validateRequest(UserValidation.banUserValidationSchema),
-  UserController.banUser
+  UserController.banUser,
 );
 
 router.patch(
-  '/:id/approve',
-  auth('ADMIN'),
+  "/:id/approve",
+  auth("ADMIN"),
   validateRequest(UserValidation.approveAgencyValidationSchema),
-  UserController.approveAgency
+  UserController.approveAgency,
 );
 
 export const UserRoutes = router;
