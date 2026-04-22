@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 // Import your getUser function
 import { getUser } from "@/services/auth.service"
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Check for the token (checking both common names)
@@ -102,6 +102,15 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin-dashboard",
+    "/agency-dashboard",
+    "/agency-approval",
+    "/bookings",
+    "/profile",
+    "/packages",
+    "/services",
+    "/tour-guide-profile",
+    "/tour-packages",
     // Apply middleware to all routes except api, static files, and images
     "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],

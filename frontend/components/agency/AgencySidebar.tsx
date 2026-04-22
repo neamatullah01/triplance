@@ -5,44 +5,40 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Users,
-  Building2,
+  Map,
   CalendarCheck,
-  CreditCard,
-  FileText,
-  Star,
+  ImageIcon,
+  Settings,
   ChevronLeft,
   ChevronRight,
   PlaneTakeoff,
   LogOut,
-  Shield,
+  Briefcase,
   X,
 } from "lucide-react";
 
 const navItems = [
-  { label: "Overview",  href: "/admin-dashboard",          icon: LayoutDashboard },
-  { label: "Users",     href: "/admin-dashboard/users",    icon: Users           },
-  { label: "Agencies",  href: "/admin-dashboard/agencies", icon: Building2       },
-  { label: "Bookings",  href: "/admin-dashboard/bookings", icon: CalendarCheck   },
-  { label: "Payments",  href: "/admin-dashboard/payments", icon: CreditCard      },
-  { label: "Posts",     href: "/admin-dashboard/posts",    icon: FileText        },
-  { label: "Reviews",   href: "/admin-dashboard/reviews",  icon: Star            },
+  { label: "Overview",  href: "/agency-dashboard",          icon: LayoutDashboard },
+  { label: "Packages",  href: "/agency-dashboard/packages",  icon: Map            },
+  { label: "Bookings",  href: "/agency-dashboard/bookings",  icon: CalendarCheck  },
+  { label: "Social",    href: "/agency-dashboard/social",    icon: ImageIcon      },
+  { label: "Profile",   href: "/agency-dashboard/profile",   icon: Settings       },
 ];
 
-interface AdminSidebarProps {
+interface AgencySidebarProps {
   isMobileOpen: boolean;
   onClose: () => void;
 }
 
-export function AdminSidebar({ isMobileOpen, onClose }: AdminSidebarProps) {
+export function AgencySidebar({ isMobileOpen, onClose }: AgencySidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
   return (
     <aside
       className={`
-        fixed inset-y-0 left-0 z-50 flex flex-col h-full
-        bg-slate-50 dark:bg-slate-900/80
+        fixed inset-y-0 left-0 z-50 flex flex-col
+        bg-slate-50 dark:bg-slate-900/95
         border-r border-slate-200 dark:border-slate-800
         transition-all duration-300 ease-in-out
         ${collapsed ? "w-[72px]" : "w-64"}
@@ -57,13 +53,16 @@ export function AdminSidebar({ isMobileOpen, onClose }: AdminSidebarProps) {
         </div>
         {!collapsed && (
           <div className="overflow-hidden flex-1">
-            <h1 className="text-base font-bold text-slate-900 dark:text-white truncate">Triplance</h1>
+            <h1 className="text-base font-bold text-slate-900 dark:text-white truncate">
+              Triplance
+            </h1>
             <p className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-              <Shield className="h-3 w-3" /> Admin Panel
+              <Briefcase className="h-3 w-3" />
+              Agency Portal
             </p>
           </div>
         )}
-        {/* Mobile close */}
+        {/* Mobile close button */}
         {!collapsed && (
           <button
             onClick={onClose}

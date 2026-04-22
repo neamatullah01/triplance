@@ -3,11 +3,11 @@
 import { Menu, Search, Bell } from "lucide-react";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
-interface AdminTopBarProps {
+interface AgencyTopBarProps {
   onMenuClick: () => void;
 }
 
-export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
+export function AgencyTopBar({ onMenuClick }: AgencyTopBarProps) {
   return (
     <header className="h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
       {/* Left */}
@@ -23,10 +23,10 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
 
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
-            Dashboard
+            Agency Dashboard
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block -mt-0.5">
-            Welcome back, Admin
+            Welcome back, Agency
           </p>
         </div>
       </div>
@@ -39,7 +39,7 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
           <input
             type="text"
             placeholder="Search anything..."
-            className="w-48 lg:w-56 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 text-foreground placeholder:text-slate-400 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 transition-all"
+            className="w-48 lg:w-56 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 placeholder:text-slate-400 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 transition-all"
           />
         </div>
 
@@ -59,8 +59,12 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
             A
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">Admin</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">Super Admin</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
+              Agency
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+              Travel Provider
+            </p>
           </div>
         </div>
       </div>
