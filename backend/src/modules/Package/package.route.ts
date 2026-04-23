@@ -20,6 +20,12 @@ router.get(
 );
 
 router.get(
+  '/my-packages',
+  auth('AGENCY'),
+  PackageController.getMyAgencyPackages
+);
+
+router.get(
   '/:id',
   PackageController.getPackageById
 );

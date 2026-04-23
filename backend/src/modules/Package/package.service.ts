@@ -1,42 +1,68 @@
-import httpStatus from 'http-status';
-import { JwtPayload } from 'jsonwebtoken';
-import { Prisma } from '../../../generated/prisma/client';
-import AppError from '../../errors/AppError';
-import { prisma } from '../../lib/prisma';
-import { packageSearchableFields } from './package.constant';
+import httpStatus from "http-status";
+import { JwtPayload } from "jsonwebtoken";
+import { Prisma } from "../../../generated/prisma/client";
+import AppError from "../../errors/AppError";
+import { prisma } from "../../lib/prisma";
+import { packageSearchableFields } from "./package.constant";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
-const createPackageIntoDB = async (payload: any, user: JwtPayload) => {
-  // Check if agency is verified
-  const agency = await prisma.user.findUnique({ where: { id: user.userId } });
-  if (!agency) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-  if (!agency.isVerified) {
-    throw new AppError(httpStatus.FORBIDDEN, 'Agency is not verified to create packages');
+const createPackage = async (agencyId: string, payload: any) => {
+  // 1. Extract Base64 string from payload
+  const base64Image =
+    payload.images && payload.images.length > 0 ? payload.images[0] : null;
+
+  if (!base64Image) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Cover image is required");
   }
 
-  const result = await prisma.package.create({
+  // 2. Upload Base64 to Cloudinary
+  // Assuming uploadToCloudinary accepts either a file path OR a base64 string
+  const uploadedImage = await uploadToCloudinary(base64Image);
+
+  if (!uploadedImage) {
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Image upload failed. Please try again.",
+    );
+  }
+
+  const secureImageUrl = uploadedImage.secure_url;
+
+  // 3. Create the package in the database
+  // Note: No need for JSON.parse() here because express.json() already parsed the body natively!
+  const newPackage = await prisma.package.create({
     data: {
-      ...payload,
-      agencyId: user.userId,
+      agencyId,
+      title: payload.title,
+      description: payload.description,
+      price: payload.price,
+      maxCapacity: payload.maxCapacity,
+      destination: payload.destination,
+      lastBookingDay: new Date(payload.lastBookingDay),
+      availableDates: payload.availableDates.map((d: string) => new Date(d)),
+      amenities: payload.amenities,
+      itinerary: payload.itinerary,
+      images: [secureImageUrl], // Array of image URLs per PRD
+      isActive: true,
     },
   });
-  return result;
+
+  return newPackage;
 };
 
 const getAllPackagesFromDB = async (query: any) => {
-  const { 
-    page = 1, 
-    limit = 10, 
-    searchTerm, 
-    destination, 
-    title, 
-    minPrice, 
-    maxPrice, 
-    sortBy = 'createdAt', 
-    sortOrder = 'desc' 
+  const {
+    page = 1,
+    limit = 10,
+    searchTerm,
+    destination,
+    title,
+    minPrice,
+    maxPrice,
+    sortBy = "createdAt",
+    sortOrder = "desc",
   } = query;
-  
+
   const skip = (Number(page) - 1) * Number(limit);
 
   const andConditions: Prisma.PackageWhereInput[] = [];
@@ -47,10 +73,7 @@ const getAllPackagesFromDB = async (query: any) => {
   // Exclude packages whose lastBookingDay has already passed.
   // Packages with no lastBookingDay set are always visible.
   andConditions.push({
-    OR: [
-      { lastBookingDay: null },
-      { lastBookingDay: { gte: new Date() } },
-    ],
+    OR: [{ lastBookingDay: null }, { lastBookingDay: { gte: new Date() } }],
   });
 
   if (searchTerm) {
@@ -58,7 +81,7 @@ const getAllPackagesFromDB = async (query: any) => {
       OR: packageSearchableFields.map((field) => ({
         [field]: {
           contains: searchTerm as string,
-          mode: 'insensitive',
+          mode: "insensitive",
         },
       })),
     });
@@ -68,7 +91,7 @@ const getAllPackagesFromDB = async (query: any) => {
     andConditions.push({
       destination: {
         contains: destination as string,
-        mode: 'insensitive',
+        mode: "insensitive",
       },
     });
   }
@@ -77,7 +100,7 @@ const getAllPackagesFromDB = async (query: any) => {
     andConditions.push({
       title: {
         contains: title as string,
-        mode: 'insensitive',
+        mode: "insensitive",
       },
     });
   }
@@ -91,7 +114,8 @@ const getAllPackagesFromDB = async (query: any) => {
     });
   }
 
-  const whereConditions: Prisma.PackageWhereInput = andConditions.length > 0 ? { AND: andConditions } : {};
+  const whereConditions: Prisma.PackageWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
 
   const packages = await prisma.package.findMany({
     where: whereConditions,
@@ -100,9 +124,94 @@ const getAllPackagesFromDB = async (query: any) => {
     orderBy: { [sortBy as string]: sortOrder as string },
     include: {
       agency: {
-         select: { id: true, name: true, profileImage: true }
-      }
-    }
+        select: { id: true, name: true, profileImage: true },
+      },
+    },
+  });
+
+  const total = await prisma.package.count({ where: whereConditions });
+
+  return {
+    meta: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+    },
+    data: packages,
+  };
+};
+
+const getMyAgencyPackagesFromDB = async (user: JwtPayload, query: any) => {
+  const {
+    page = 1,
+    limit = 10,
+    searchTerm,
+    destination,
+    title,
+    minPrice,
+    maxPrice,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = query;
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const andConditions: Prisma.PackageWhereInput[] = [];
+
+  // Filter by agencyId from payload
+  andConditions.push({ agencyId: user.userId });
+
+  if (searchTerm) {
+    andConditions.push({
+      OR: packageSearchableFields.map((field) => ({
+        [field]: {
+          contains: searchTerm as string,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
+
+  if (destination) {
+    andConditions.push({
+      destination: {
+        contains: destination as string,
+        mode: "insensitive",
+      },
+    });
+  }
+
+  if (title) {
+    andConditions.push({
+      title: {
+        contains: title as string,
+        mode: "insensitive",
+      },
+    });
+  }
+
+  if (minPrice || maxPrice) {
+    andConditions.push({
+      price: {
+        ...(minPrice && { gte: Number(minPrice) }),
+        ...(maxPrice && { lte: Number(maxPrice) }),
+      },
+    });
+  }
+
+  const whereConditions: Prisma.PackageWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const packages = await prisma.package.findMany({
+    where: whereConditions,
+    skip,
+    take: Number(limit),
+    orderBy: { [sortBy as string]: sortOrder as string },
+    include: {
+      agency: {
+        select: { id: true, name: true, profileImage: true },
+      },
+    },
   });
 
   const total = await prisma.package.count({ where: whereConditions });
@@ -122,30 +231,43 @@ const getPackageByIdFromDB = async (id: string) => {
     where: { id },
     include: {
       agency: {
-        select: { id: true, name: true, bio: true, profileImage: true, rating: true }
+        select: {
+          id: true,
+          name: true,
+          bio: true,
+          profileImage: true,
+          rating: true,
+        },
       },
       reviews: {
         include: {
-          traveler: { select: { id: true, name: true, profileImage: true } }
-        }
-      }
-    }
+          traveler: { select: { id: true, name: true, profileImage: true } },
+        },
+      },
+    },
   });
 
   if (!pkg) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Package not found');
+    throw new AppError(httpStatus.NOT_FOUND, "Package not found");
   }
   return pkg;
 };
 
-const updatePackageIntoDB = async (id: string, payload: any, user: JwtPayload) => {
+const updatePackageIntoDB = async (
+  id: string,
+  payload: any,
+  user: JwtPayload,
+) => {
   const pkg = await prisma.package.findUnique({ where: { id } });
   if (!pkg) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Package not found');
+    throw new AppError(httpStatus.NOT_FOUND, "Package not found");
   }
 
   if (pkg.agencyId !== user.userId) {
-    throw new AppError(httpStatus.FORBIDDEN, 'You are not authorized to update this package');
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to update this package",
+    );
   }
 
   const result = await prisma.package.update({
@@ -159,11 +281,14 @@ const updatePackageIntoDB = async (id: string, payload: any, user: JwtPayload) =
 const deletePackageFromDB = async (id: string, user: JwtPayload) => {
   const pkg = await prisma.package.findUnique({ where: { id } });
   if (!pkg) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Package not found');
+    throw new AppError(httpStatus.NOT_FOUND, "Package not found");
   }
 
-  if (pkg.agencyId !== user.userId && user.role !== 'ADMIN') {
-    throw new AppError(httpStatus.FORBIDDEN, 'You are not authorized to delete this package');
+  if (pkg.agencyId !== user.userId && user.role !== "ADMIN") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to delete this package",
+    );
   }
 
   const result = await prisma.package.delete({ where: { id } });
@@ -171,8 +296,9 @@ const deletePackageFromDB = async (id: string, user: JwtPayload) => {
 };
 
 export const PackageService = {
-  createPackageIntoDB,
+  createPackage,
   getAllPackagesFromDB,
+  getMyAgencyPackagesFromDB,
   getPackageByIdFromDB,
   updatePackageIntoDB,
   deletePackageFromDB,
