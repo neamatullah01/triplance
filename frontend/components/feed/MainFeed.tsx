@@ -499,13 +499,16 @@ export function MainFeed() {
           All Posts
         </button>
         <button className="shrink-0 cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
-          Top Experiences
+          Following
         </button>
         <button className="shrink-0 cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
-          Local Guides
+          Agencies
         </button>
         <button className="shrink-0 cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
-          Photography
+          Packages
+        </button>
+        <button className="shrink-0 cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
+          Trending
         </button>
       </div>
 
