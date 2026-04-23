@@ -137,3 +137,19 @@ export async function updatePackage(packageId: string, payload: any) {
   if (!response.ok) throw new Error(data.message || "Failed to update package")
   return data
 }
+
+export async function deletePackage(packageId: string) {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+
+  const response = await fetch(`${env.API_URL}/packages/${packageId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.message || "Failed to delete package")
+  return data
+}

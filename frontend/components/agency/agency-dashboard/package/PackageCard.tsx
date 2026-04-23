@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Edit, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { EditPackageModal } from "./EditPackageModal" // Ensure this matches your path
+import { DeletePackageModal } from "./DeletePackageModal" // <-- 1. Import the delete modal
 
 // You can move this interface to a shared types file later
 export interface PackageData {
@@ -36,8 +37,9 @@ export function StatusBadge({ status }: { status: string }) {
 export function PackageCard({ pkg }: { pkg: PackageData }) {
   const fillPct = Math.round((pkg.booked / pkg.capacity) * 100)
 
-  // State for the Edit Modal
+  // State for the Modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false) // <-- 2. Add state for delete modal
   const router = useRouter()
 
   return (
@@ -66,6 +68,7 @@ export function PackageCard({ pkg }: { pkg: PackageData }) {
               <Edit className="h-4 w-4" />
             </button>
             <button
+              onClick={() => setIsDeleteModalOpen(true)} // <-- 3. Open delete modal on click
               className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors hover:bg-rose-600"
               title="Delete Package"
             >
@@ -125,6 +128,18 @@ export function PackageCard({ pkg }: { pkg: PackageData }) {
         onSuccess={() => {
           setIsEditModalOpen(false)
           router.refresh() // Refreshes the server component to show updated data
+        }}
+      />
+
+      {/* 4. Render the Delete Modal */}
+      <DeletePackageModal
+        isOpen={isDeleteModalOpen}
+        packageId={pkg.id}
+        packageTitle={pkg.title}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onSuccess={() => {
+          setIsDeleteModalOpen(false)
+          router.refresh() // Refreshes the server component to remove the deleted data
         }}
       />
     </>
