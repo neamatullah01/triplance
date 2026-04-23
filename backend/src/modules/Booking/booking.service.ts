@@ -102,19 +102,27 @@ const getMyBookingsFromDB = async (user: JwtPayload, query: any) => {
   const skip = (Number(page) - 1) * Number(limit);
 
   const bookings = await prisma.booking.findMany({
-    where: { travelerId: user.userId },
+    where: { travelerId: user.userId, status: BookingStatus.CONFIRMED },
     skip,
     take: Number(limit),
     orderBy: { createdAt: "desc" },
     include: {
       package: {
-        select: { id: true, title: true, images: true, destination: true },
+        select: {
+          id: true,
+          title: true,
+          images: true,
+          destination: true,
+          agency: {
+            select: { id: true, name: true, profileImage: true, email: true },
+          },
+        },
       },
     },
   });
 
   const total = await prisma.booking.count({
-    where: { travelerId: user.userId },
+    where: { travelerId: user.userId, status: BookingStatus.CONFIRMED },
   });
 
   return {

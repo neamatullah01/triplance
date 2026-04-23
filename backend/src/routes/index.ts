@@ -10,6 +10,7 @@ import { BookingRoutes } from "../modules/Booking/booking.route";
 import { ReviewRoutes } from "../modules/Review/review.route";
 import { AdminRoutes } from "../modules/Admin/admin.route";
 import { PaymentRoutes } from "../modules/Payment/payment.route";
+import { AgencyRoutes } from "../modules/Agency/agency.route";
 
 type TModuleRoutes = {
   path: string;
@@ -62,6 +63,10 @@ const moduleRoutes: TModuleRoutes[] = [
   {
     path: "/payments",
     route: PaymentRoutes,
+  },
+  {
+    path: "/agency",
+    route: AgencyRoutes,
   },
 ];
 
