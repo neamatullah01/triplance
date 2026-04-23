@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { MyBookingsClient } from "@/components/bookings/MyBookingsClient"
 import { getUser } from "@/services/auth.service"
-// import { getUserBookings } from "@/services/booking.service"; // Adjust this when your backend is ready
+import { getUserBookings } from "@/services/booking.service"
 
 export const metadata: Metadata = {
   title: "My Bookings | Triplance",
@@ -19,18 +19,16 @@ export default async function BookingsPage() {
   }
 
   // 2. Fetch the user's actual bookings from your backend
-  // const response = await getUserBookings(user.id);
-  // const userBookings = response?.data || [];
+  const response = await getUserBookings();
+  const userBookings = response?.data || [];
 
   return (
     <main className="flex-1 bg-slate-50 dark:bg-slate-950">
       {/* 
         Pass the fetched data to the client component. 
-        Note: While testing, you can leave this prop out, and the Client 
-        Component will automatically use the beautiful MOCK_BOOKINGS data!
       */}
       <MyBookingsClient
-      // initialBookings={userBookings}
+        initialBookings={userBookings}
       />
     </main>
   )

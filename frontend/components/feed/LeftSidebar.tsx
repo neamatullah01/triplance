@@ -1,75 +1,119 @@
-import Link from "next/link";
-import { Home, Compass, Bookmark, Map, Settings, CircleUser } from "lucide-react";
-import { getUser } from "@/services/auth.service";
-import { CreatePostModal } from "./CreatePostModal";
+import Link from "next/link"
+import {
+  Home,
+  Compass,
+  Bookmark,
+  Map,
+  Settings,
+  CircleUser,
+  Telescope,
+} from "lucide-react"
+import { getUser } from "@/services/auth.service"
+import { CreatePostModal } from "./CreatePostModal"
 
 export async function LeftSidebar() {
-  const user = await getUser();
+  const user = await getUser()
   return (
     <div className="flex flex-col gap-6">
       {/* User Profile Snippet */}
-      <div className="flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
-        <Link href="/feed/profile" className="flex items-center gap-4 mb-5 group cursor-pointer">
-          <div className="h-14 w-14 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 group-hover:border-indigo-400 transition-colors">
+      <div className="flex flex-col rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <Link
+          href="/feed/profile"
+          className="group mb-5 flex cursor-pointer items-center gap-4"
+        >
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-colors group-hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-800">
             {user?.profileImage ? (
-              <img src={user.profileImage} alt={user.name} className="h-full w-full object-cover" />
+              <img
+                src={user.profileImage}
+                alt={user.name}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <CircleUser className="h-full w-full stroke-1 text-slate-400" />
             )}
           </div>
           <div className="flex flex-col">
-            <h3 className="text-base font-bold text-indigo-900 dark:text-indigo-200 leading-tight truncate w-32 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+            <h3 className="w-32 truncate text-base leading-tight font-bold text-indigo-900 transition-colors group-hover:text-indigo-600 dark:text-indigo-200 dark:group-hover:text-indigo-300">
               {user?.name || "User"}
             </h3>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate w-32">
-              {user?.bio || (user?.role === "AGENCY" ? "Travel Agency" : "Global Explorer")}
+            <p className="mt-0.5 w-32 truncate text-[13px] font-medium text-slate-500 dark:text-slate-400">
+              {user?.bio ||
+                (user?.role === "AGENCY" ? "Travel Agency" : "Global Explorer")}
             </p>
           </div>
         </Link>
-        
-        <div className="w-full h-px bg-slate-100 dark:bg-slate-800 mb-5"></div>
-        
+
+        <div className="mb-5 h-px w-full bg-slate-100 dark:bg-slate-800"></div>
+
         <div className="flex items-center justify-between px-1">
           <div className="flex flex-col items-center">
             <span className="text-[15px] font-bold text-indigo-900 dark:text-indigo-300">
               {user?._count?.posts || 0}
             </span>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase mt-1">Posts</span>
+            <span className="mt-1 text-[10px] font-bold tracking-widest text-slate-500 uppercase dark:text-slate-400">
+              Posts
+            </span>
           </div>
           <div className="flex flex-col items-center">
             <span className="text-[15px] font-bold text-indigo-900 dark:text-indigo-300">
               {user?._count?.followers || 0}
             </span>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase mt-1">Followers</span>
+            <span className="mt-1 text-[10px] font-bold tracking-widest text-slate-500 uppercase dark:text-slate-400">
+              Followers
+            </span>
           </div>
           <div className="flex flex-col items-center">
             <span className="text-[15px] font-bold text-indigo-900 dark:text-indigo-300">
               {user?._count?.following || 0}
             </span>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase mt-1">Following</span>
+            <span className="mt-1 text-[10px] font-bold tracking-widest text-slate-500 uppercase dark:text-slate-400">
+              Following
+            </span>
           </div>
         </div>
       </div>
 
       {/* Navigation Links */}
       <nav className="flex flex-col gap-2 pl-2">
-        <Link href="/feed" className="flex items-center gap-4 p-3 rounded-xl bg-indigo-50 text-indigo-700 font-semibold transition-colors">
+        <Link
+          href="/feed"
+          className="flex items-center gap-4 rounded-xl bg-indigo-50 p-3 font-semibold text-indigo-700 transition-colors"
+        >
           <Home className="h-5 w-5" />
           Home
         </Link>
-        <Link href="/discover" className="flex items-center gap-4 p-3 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors">
+        <Link
+          href="/explore"
+          className="flex items-center gap-4 rounded-xl p-3 font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+        >
           <Compass className="h-5 w-5" />
           Discover
         </Link>
-        <Link href="/saved" className="flex items-center gap-4 p-3 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors">
+        {/* <Link
+          href="/saved"
+          className="flex items-center gap-4 rounded-xl p-3 font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+        >
           <Bookmark className="h-5 w-5" />
           Saved
+        </Link> */}
+        <Link
+          href="/explorers"
+          className="flex items-center gap-4 rounded-xl p-3 font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+        >
+          <Telescope className="h-5 w-5" />
+          Explorers
         </Link>
-        <Link href="/journeys" className="flex items-center gap-4 p-3 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors">
+        <Link
+          href="/bookings"
+          className="flex items-center gap-4 rounded-xl p-3 font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+        >
           <Map className="h-5 w-5" />
           Journeys
         </Link>
-        <Link href="/settings" className="flex items-center gap-4 p-3 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors">
+        <Link
+          href="/settings"
+          className="flex items-center gap-4 rounded-xl p-3 font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+        >
           <Settings className="h-5 w-5" />
           Settings
         </Link>
@@ -80,5 +124,5 @@ export async function LeftSidebar() {
         <CreatePostModal />
       </div>
     </div>
-  );
+  )
 }

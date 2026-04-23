@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -17,50 +18,6 @@ import {
   ReceiptText,
 } from "lucide-react"
 
-// --- Mock Data (Replace with your actual API data) ---
-const MOCK_BOOKINGS = [
-  {
-    id: "BKG-782910",
-    package: {
-      id: "pkg_1",
-      title: "Cox's Bazar Beach Tour 3",
-      destination: "Cox's Bazar, Bangladesh",
-      image:
-        "https://images.unsplash.com/photo-1605649487212-4d43b2f90119?q=80&w=2000&auto=format&fit=crop",
-    },
-    agency: {
-      name: "Test Agency",
-      id: "agency_1",
-    },
-    status: "UPCOMING", // 'UPCOMING' | 'COMPLETED' | 'CANCELLED'
-    startDate: "2026-05-10T00:00:00.000Z",
-    travelers: 2,
-    totalPrice: 25000,
-    paymentStatus: "PAID",
-    createdAt: "2026-04-20T10:30:00.000Z",
-  },
-  {
-    id: "BKG-451233",
-    package: {
-      id: "pkg_2",
-      title: "Sundarbans Wildlife Safari",
-      destination: "Khulna, Bangladesh",
-      image:
-        "https://images.unsplash.com/photo-1622224505051-789a7fb3cff5?q=80&w=2000&auto=format&fit=crop",
-    },
-    agency: {
-      name: "EcoTours BD",
-      id: "agency_2",
-    },
-    status: "COMPLETED",
-    startDate: "2025-11-15T00:00:00.000Z",
-    travelers: 4,
-    totalPrice: 48000,
-    paymentStatus: "PAID",
-    createdAt: "2025-10-01T14:20:00.000Z",
-  },
-]
-
 // --- Animation Variants ---
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -72,13 +29,34 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 }
 
-export function MyBookingsClient({ initialBookings = MOCK_BOOKINGS }) {
+export function MyBookingsClient({
+  initialBookings,
+}: {
+  initialBookings: any[]
+}) {
   const [activeTab, setActiveTab] = useState<
     "UPCOMING" | "COMPLETED" | "CANCELLED"
   >("UPCOMING")
   const [bookings, setBookings] = useState(initialBookings)
 
-  const filteredBookings = bookings.filter((b) => b.status === activeTab)
+  const getTabStatus = (booking: any) => {
+    if (booking.status === "CANCELLED") return "CANCELLED"
+    const dateString = booking.selectedDate || booking.startDate
+    if (!dateString) return "UPCOMING"
+    const selectedDate = new Date(dateString)
+    const now = new Date()
+    // Compare dates ignoring time
+    now.setHours(0, 0, 0, 0)
+    selectedDate.setHours(0, 0, 0, 0)
+    if (selectedDate < now) {
+      return "COMPLETED"
+    }
+    return "UPCOMING"
+  }
+
+  const filteredBookings = bookings.filter(
+    (b: any) => getTabStatus(b) === activeTab
+  )
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-BD", {
@@ -157,19 +135,28 @@ export function MyBookingsClient({ initialBookings = MOCK_BOOKINGS }) {
                   {/* Left: Image Thumbnail */}
                   <div className="relative h-48 w-full shrink-0 overflow-hidden md:h-auto md:w-1/3 lg:w-1/4">
                     <img
-                      src={booking.package.image}
-                      alt={booking.package.title}
+                      src={
+                        booking.package?.images?.[0] ||
+                        booking.package?.image ||
+                        "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop"
+                      }
+                      alt={booking.package?.title || "Package Image"}
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute top-4 left-4">
-                      {booking.status === "UPCOMING" && (
+                      {getTabStatus(booking) === "UPCOMING" && (
                         <span className="flex items-center gap-1.5 rounded-lg bg-indigo-600/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md">
                           <Clock className="h-3.5 w-3.5" /> Upcoming
                         </span>
                       )}
-                      {booking.status === "COMPLETED" && (
+                      {getTabStatus(booking) === "COMPLETED" && (
                         <span className="flex items-center gap-1.5 rounded-lg bg-emerald-500/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md">
                           <CheckCircle2 className="h-3.5 w-3.5" /> Completed
+                        </span>
+                      )}
+                      {getTabStatus(booking) === "CANCELLED" && (
+                        <span className="flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md">
+                          <Clock className="h-3.5 w-3.5" /> Cancelled
                         </span>
                       )}
                     </div>
@@ -185,11 +172,11 @@ export function MyBookingsClient({ initialBookings = MOCK_BOOKINGS }) {
                             Booking ID: {booking.id}
                           </p>
                           <h3 className="line-clamp-1 text-xl font-bold text-slate-900 dark:text-white">
-                            {booking.package.title}
+                            {booking.package?.title}
                           </h3>
                           <div className="mt-1 flex items-center gap-1.5 text-sm font-medium text-slate-500">
                             <MapPin className="h-4 w-4" />{" "}
-                            {booking.package.destination}
+                            {booking.package?.destination}
                           </div>
                         </div>
 
@@ -211,7 +198,9 @@ export function MyBookingsClient({ initialBookings = MOCK_BOOKINGS }) {
                             <CalendarDays className="h-3.5 w-3.5" /> Start Date
                           </p>
                           <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {formatDate(booking.startDate)}
+                            {formatDate(
+                              booking.selectedDate || booking.startDate
+                            )}
                           </p>
                         </div>
                         <div>
@@ -219,7 +208,8 @@ export function MyBookingsClient({ initialBookings = MOCK_BOOKINGS }) {
                             <Users className="h-3.5 w-3.5" /> Travelers
                           </p>
                           <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {booking.travelers} Persons
+                            {booking.numberOfTravelers || booking.travelers}{" "}
+                            Persons
                           </p>
                         </div>
                         <div className="col-span-2 sm:col-span-1">
@@ -228,7 +218,9 @@ export function MyBookingsClient({ initialBookings = MOCK_BOOKINGS }) {
                           </p>
                           <p className="flex items-center gap-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="h-4 w-4" />{" "}
-                            {booking.paymentStatus}
+                            {booking.status === "CONFIRMED"
+                              ? "PAID"
+                              : booking.paymentStatus || booking.status}
                           </p>
                         </div>
                       </div>
@@ -237,28 +229,50 @@ export function MyBookingsClient({ initialBookings = MOCK_BOOKINGS }) {
                     {/* Footer Actions */}
                     <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-5 sm:flex-row dark:border-slate-800">
                       {/* Agency Info */}
-                      <div className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto dark:text-slate-300">
-                        <Building2 className="h-4 w-4 text-slate-400" />
-                        Organized by{" "}
-                        <span className="font-bold text-slate-900 dark:text-white">
-                          {booking.agency.name}
-                        </span>
-                      </div>
+                      {/* Agency Info */}
+                      {booking.package?.agency ? (
+                        <div className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto dark:text-slate-300">
+                          <Building2 className="h-4 w-4 text-slate-400" />
+                          Organized by{" "}
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {booking.package.agency.name}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto dark:text-slate-300">
+                          <Building2 className="h-4 w-4 text-slate-400" />
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            Triplance Verified
+                          </span>
+                        </div>
+                      )}
 
                       {/* Dynamic Action Buttons based on Status */}
                       <div className="flex w-full items-center gap-3 sm:w-auto">
-                        {booking.status === "UPCOMING" && (
+                        {getTabStatus(booking) === "UPCOMING" && (
                           <>
-                            <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 sm:flex-none dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                              <MessageCircle className="h-4 w-4" /> Contact
-                            </button>
+                            {booking.package?.agency?.id ? (
+                              <Link
+                                href={`/agency/${booking.package.agency.id}`}
+                                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 sm:flex-none dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                              >
+                                <MessageCircle className="h-4 w-4" /> Contact
+                              </Link>
+                            ) : (
+                              <button
+                                disabled
+                                className="flex flex-1 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-400 sm:flex-none dark:bg-slate-800 dark:text-slate-500"
+                              >
+                                <MessageCircle className="h-4 w-4" /> Contact
+                              </button>
+                            )}
                             <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-colors hover:bg-indigo-700 sm:flex-none">
                               Details <ChevronRight className="-ml-1 h-4 w-4" />
                             </button>
                           </>
                         )}
 
-                        {booking.status === "COMPLETED" && (
+                        {getTabStatus(booking) === "COMPLETED" && (
                           <>
                             <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 sm:flex-none dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                               <ReceiptText className="h-4 w-4" /> Invoice
