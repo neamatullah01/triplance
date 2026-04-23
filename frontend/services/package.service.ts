@@ -120,3 +120,20 @@ export async function createPackage(payload: any) {
 
   return data
 }
+
+export async function updatePackage(packageId: string, payload: any) {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  const response = await fetch(`${env.API_URL}/packages/${packageId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.message || "Failed to update package")
+  return data
+}
