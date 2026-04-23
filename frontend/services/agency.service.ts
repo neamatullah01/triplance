@@ -4,9 +4,12 @@ import { env } from "@/lib/env";
 import { cookies } from "next/headers";
 
 export const getAgencyById = async (id: string) => {
+  const storeCookie = await cookies();
+  const token = storeCookie.get("token")?.value;
   try {
     const res = await fetch(`${env.API_URL}/users/${id}`, {
       method: "GET",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
       // Tag this specific agency so we can revalidate it later when they add a post/package
       next: { tags: [`user-${id}`] }, 
       cache: "no-store", 

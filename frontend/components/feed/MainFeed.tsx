@@ -532,7 +532,7 @@ export function MainFeed() {
                   </div>
                 </div>
                 {item.author?.id && following.has(item.author.id) ? (
-                  <Link href={`/agencies/${item.author.id}`}>
+                  <Link href={`/agency/${item.author.id}`}>
                     <button className="cursor-pointer rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
                       View
                     </button>

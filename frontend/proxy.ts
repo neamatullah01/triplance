@@ -3,6 +3,9 @@ import type { NextRequest } from "next/server"
 // Import your getUser function
 import { getUser } from "@/services/auth.service"
 
+// Define paths that unauthenticated users are allowed to see
+const publicPaths = ["/login", "/register"]
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -28,28 +31,43 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  const isPublicPath = publicPaths.includes(pathname)
+
   // --------------------------------------------------------
-  // RULE A: NOT LOGGED IN
+  // RULE A: NOT LOGGED IN (Global Lockdown)
   // --------------------------------------------------------
   if (!userRole) {
-    if (
-      pathname.startsWith("/admin-dashboard") ||
-      pathname.startsWith("/agency-dashboard") ||
-      pathname.startsWith("/agency-approval") ||
-      pathname.startsWith("/bookings")
-    ) {
+    // If they are NOT logged in, and trying to access anything other than /login or /register
+    if (!isPublicPath) {
       return NextResponse.redirect(new URL("/login", request.url))
     }
+    // Let them view the login/register pages
     return NextResponse.next()
   }
 
   // --------------------------------------------------------
-  // RULE B: GLOBAL FORCED REDIRECTS (Home & Auth pages)
+  // RULE B: LOGGED IN BUT TRYING TO ACCESS AUTH PAGES
   // --------------------------------------------------------
-  const isHomeOrAuth =
-    pathname === "/" || pathname === "/login" || pathname === "/register"
+  if (isPublicPath) {
+    if (userRole === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin-dashboard", request.url))
+    }
+    if (userRole === "AGENCY") {
+      return NextResponse.redirect(
+        new URL(
+          isVerified ? "/agency-dashboard" : "/agency-approval",
+          request.url
+        )
+      )
+    }
+    // If it's a Traveler (or any other role), send them to the home page
+    return NextResponse.redirect(new URL("/", request.url))
+  }
 
-  if (isHomeOrAuth) {
+  // --------------------------------------------------------
+  // RULE C: HOMEPAGE REDIRECTS FOR ADMIN/AGENCY
+  // --------------------------------------------------------
+  if (pathname === "/") {
     if (userRole === "ADMIN") {
       return NextResponse.redirect(new URL("/admin-dashboard", request.url))
     }
@@ -65,7 +83,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // --------------------------------------------------------
-  // RULE C: STRICT ROUTE PROTECTION
+  // RULE D: STRICT ROUTE PROTECTION FOR LOGGED-IN USERS
   // --------------------------------------------------------
 
   // 1. Admin Dashboard Protection
@@ -102,16 +120,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/admin-dashboard",
-    "/agency-dashboard",
-    "/agency-approval",
-    "/bookings",
-    "/profile",
-    "/packages",
-    "/services",
-    "/tour-guide-profile",
-    "/tour-packages",
-    // Apply middleware to all routes except api, static files, and images
+    // Apply middleware to all routes EXCEPT api, next static files, and images
     "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 }
