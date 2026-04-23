@@ -1,5 +1,9 @@
 "use client"
 
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { useEffect, useState, useRef, useCallback } from "react"
 import {
   MoreHorizontal,
@@ -16,6 +20,10 @@ import {
   ChevronRight,
   X,
   Compass,
+  Home,
+  Search,
+  Users,
+  User,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getFeedPost } from "@/services/post.service"
@@ -59,7 +67,7 @@ export function MainFeed() {
     currentIndex: 0,
   })
 
-  const observerTarget = useRef(null)
+  const observerTarget = useRef<HTMLDivElement | null>(null)
   const fetchingRef = useRef(false)
 
   const loadMore = useCallback(async () => {
@@ -357,7 +365,7 @@ export function MainFeed() {
         >
           <img
             src={images[0]}
-            alt="Post Media"
+            alt="Triplance Post Media"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </div>
@@ -373,6 +381,7 @@ export function MainFeed() {
           >
             <img
               src={images[0]}
+              alt="Triplance Post Media"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
@@ -382,6 +391,7 @@ export function MainFeed() {
           >
             <img
               src={images[1]}
+              alt="Triplance Post Media"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
@@ -398,6 +408,7 @@ export function MainFeed() {
           >
             <img
               src={images[0]}
+              alt="Triplance Post Media"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
@@ -407,6 +418,7 @@ export function MainFeed() {
           >
             <img
               src={images[1]}
+              alt="Triplance Post Media"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
@@ -416,6 +428,7 @@ export function MainFeed() {
           >
             <img
               src={images[2]}
+              alt="Triplance Post Media"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
@@ -431,6 +444,7 @@ export function MainFeed() {
         >
           <img
             src={images[0]}
+            alt="Triplance Post Media"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
@@ -440,6 +454,7 @@ export function MainFeed() {
         >
           <img
             src={images[1]}
+            alt="Triplance Post Media"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
@@ -449,16 +464,17 @@ export function MainFeed() {
         >
           <img
             src={images[2]}
+            alt="Triplance Post Media"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
-
         <div
           onClick={() => openLightbox(3)}
           className="group relative aspect-square w-full cursor-pointer overflow-hidden"
         >
           <img
             src={images[3]}
+            alt="Triplance Post Media"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {images.length > 4 && (
@@ -472,36 +488,33 @@ export function MainFeed() {
   }
 
   return (
-    <div className="relative flex flex-col gap-6">
-      {/* Filter Chips */}
-      <div className="sticky top-0 z-30 -mx-1 flex flex-wrap items-center justify-center gap-3 bg-white/80 px-1 pt-2 pb-4 backdrop-blur-xl dark:bg-slate-950/80">
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <div className="sticky top-0 z-30 -mx-1 hidden w-full flex-nowrap items-center justify-start gap-3 overflow-x-auto scroll-smooth bg-white/80 px-2 pt-2 pb-4 backdrop-blur-xl [-ms-overflow-style:none] [scrollbar-width:none] sm:flex sm:px-1 md:justify-center dark:bg-slate-950/80 [&::-webkit-scrollbar]:hidden">
         <button
           onClick={() =>
             window.dispatchEvent(new CustomEvent("refreshMainFeed"))
           }
-          className="cursor-pointer rounded-full bg-indigo-700 px-5 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-indigo-800"
+          className="shrink-0 cursor-pointer rounded-full bg-indigo-700 px-5 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-indigo-800"
         >
           All Posts
         </button>
-        <button className="cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
+        <button className="shrink-0 cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
           Top Experiences
         </button>
-        <button className="cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
+        <button className="shrink-0 cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
           Local Guides
         </button>
-        <button className="cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
+        <button className="shrink-0 cursor-pointer rounded-full bg-blue-100 px-5 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-200">
           Photography
         </button>
       </div>
 
-      {/* Dynamic Infinite Feed Timeline */}
       {feedItems.map((item) => (
         <article
           key={item.id}
-          className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+          className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:shadow-md sm:rounded-3xl sm:p-5 dark:border-slate-800 dark:bg-slate-900"
         >
           {item.feedType === "PACKAGE" ? (
-            /* --- TYPE 1: AGENCY PACKAGE TIMELINE CARD --- */
             <>
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -509,7 +522,7 @@ export function MainFeed() {
                     {item.author?.profileImage ? (
                       <img
                         src={item.author.profileImage}
-                        alt={item.author.name}
+                        alt={item.author.name || "Agency Profile"}
                         className="h-full w-full object-cover"
                       />
                     ) : item.author?.name ? (
@@ -523,7 +536,6 @@ export function MainFeed() {
                       <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                         {item.author?.name || "Agency"}
                       </h4>
-                      {/* ✅ FIX: Solid blue circle with white checkmark inside */}
                       <CheckCircle2 className="h-4 w-4 fill-blue-500 text-white" />
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -563,7 +575,6 @@ export function MainFeed() {
                 {item.content?.split("\n\n")[1] || item.content}
               </p>
 
-              {/* ✅ FIX: Wrap Button inside Next.js Link pointing to /explore/[packageId] */}
               <Link href={`/explore/${item.id}`} className="block w-full">
                 <button className="w-full cursor-pointer rounded-xl bg-rose-800 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-900">
                   View Expedition Details
@@ -571,7 +582,6 @@ export function MainFeed() {
               </Link>
             </>
           ) : (
-            /* --- TYPES 2 & 3: REGULAR POSTS (Traveler AND Agency) --- */
             <>
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -579,7 +589,7 @@ export function MainFeed() {
                     {item.author?.profileImage ? (
                       <img
                         src={item.author.profileImage}
-                        alt={item.author.name}
+                        alt={item.author.name || "User Profile"}
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -595,14 +605,13 @@ export function MainFeed() {
                       <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                         {item.author?.name || "Traveler"}
                       </h4>
-                      {/* ✅ FIX: Solid blue circle with white checkmark inside */}
                       {(item.author?.role === "AGENCY" ||
                         item.author?.accountType === "AGENCY") && (
                         <CheckCircle2 className="h-4 w-4 fill-blue-500 text-white" />
                       )}
                     </div>
                     <p className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      {formatTime(item.createdAt)}{" "}
+                      {formatTime(item.createdAt)}
                       {item.location && (
                         <>
                           <MapPin className="ml-1 inline h-3 w-3" />{" "}
@@ -625,11 +634,10 @@ export function MainFeed() {
             </>
           )}
 
-          {/* Action Bar (Hidden for Packages) */}
           {item.feedType !== "PACKAGE" && (
             <>
               <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/50">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 sm:gap-6">
                   <button
                     onClick={() => handleToggleLike(item.id, item.feedType)}
                     className={`group flex cursor-pointer items-center gap-2 transition-colors active:scale-90 ${likedPosts.has(item.id) ? "text-rose-600" : "text-slate-500 hover:text-rose-600"}`}
@@ -663,7 +671,6 @@ export function MainFeed() {
                 </button>
               </div>
 
-              {/* Expandable Comments Section */}
               <AnimatePresence>
                 {expandedComments[item.id] && (
                   <motion.div
@@ -696,7 +703,9 @@ export function MainFeed() {
                                   {rootComment.user?.profileImage ? (
                                     <img
                                       src={rootComment.user.profileImage}
-                                      alt={rootComment.user.name}
+                                      alt={
+                                        rootComment.user.name || "User Avatar"
+                                      }
                                       className="h-full w-full object-cover"
                                     />
                                   ) : (
@@ -741,7 +750,6 @@ export function MainFeed() {
                                 </div>
                               </div>
 
-                              {/* Child Replies */}
                               {(
                                 commentsData[item.id]?.filter(
                                   (child) => child.parentId === rootComment.id
@@ -753,12 +761,11 @@ export function MainFeed() {
                                 >
                                   <div className="absolute top-0 bottom-4 left-6 w-px bg-slate-200 dark:bg-slate-700"></div>
                                   <div className="absolute bottom-4 left-6 h-px w-3 bg-slate-200 dark:bg-slate-700"></div>
-
                                   <div className="z-10 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
                                     {reply.user?.profileImage ? (
                                       <img
                                         src={reply.user.profileImage}
-                                        alt={reply.user.name}
+                                        alt={reply.user.name || "User Avatar"}
                                         className="h-full w-full object-cover"
                                       />
                                     ) : (
@@ -807,7 +814,6 @@ export function MainFeed() {
                         </div>
                       )}
 
-                      {/* Comment Input Bar */}
                       <div className="mt-2 flex flex-col gap-2">
                         {replyTargets[item.id] && (
                           <div className="flex items-center justify-between rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5 dark:border-indigo-800 dark:bg-indigo-900/30">
@@ -876,7 +882,6 @@ export function MainFeed() {
         </article>
       ))}
 
-      {/* NEW TRIPLANCE THEME LOADER & Infinite Scroll Sentry */}
       <div
         ref={observerTarget}
         className="flex min-h-[120px] flex-col items-center justify-center py-6"
@@ -923,7 +928,6 @@ export function MainFeed() {
         ) : null}
       </div>
 
-      {/* Fullscreen Lightbox Viewer Modal */}
       <AnimatePresence>
         {lightbox.isOpen && (
           <motion.div
@@ -972,6 +976,7 @@ export function MainFeed() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               src={lightbox.images[lightbox.currentIndex]}
+              alt="Triplance Fullscreen Media"
               className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
