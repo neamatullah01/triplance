@@ -253,31 +253,83 @@ const getPackageByIdFromDB = async (id: string) => {
   return pkg;
 };
 
-const updatePackageIntoDB = async (
-  id: string,
+const updatePackage = async (
+  agencyId: string,
+  packageId: string,
   payload: any,
-  user: JwtPayload,
 ) => {
-  const pkg = await prisma.package.findUnique({ where: { id } });
-  if (!pkg) {
+  // 1. Verify ownership[cite: 1]
+  const existingPackage = await prisma.package.findUnique({
+    where: { id: packageId },
+  });
+
+  if (!existingPackage) {
     throw new AppError(httpStatus.NOT_FOUND, "Package not found");
   }
-
-  if (pkg.agencyId !== user.userId) {
+  if (existingPackage.agencyId !== agencyId) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You are not authorized to update this package",
+      "You do not have permission to edit this package",
     );
   }
 
-  const result = await prisma.package.update({
-    where: { id },
-    data: payload,
+  // 2. Handle Image Update (Check if the incoming image is a new Base64 string)
+  let imageUrl = existingPackage.images[0];
+  if (
+    payload.images &&
+    payload.images.length > 0 &&
+    payload.images[0].startsWith("data:image")
+  ) {
+    const uploadedImage = await uploadToCloudinary(payload.images[0]);
+    if (!uploadedImage) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        "Image upload failed. Please try again.",
+      );
+    }
+    imageUrl = uploadedImage.secure_url;
+  }
+
+  // 3. Update the package
+  const updatedPackage = await prisma.package.update({
+    where: { id: packageId },
+    data: {
+      title:
+        payload.title !== undefined ? payload.title : existingPackage.title,
+      description:
+        payload.description !== undefined
+          ? payload.description
+          : existingPackage.description,
+      price:
+        payload.price !== undefined ? payload.price : existingPackage.price,
+      maxCapacity:
+        payload.maxCapacity !== undefined
+          ? payload.maxCapacity
+          : existingPackage.maxCapacity,
+      destination:
+        payload.destination !== undefined
+          ? payload.destination
+          : existingPackage.destination,
+      lastBookingDay: payload.lastBookingDay
+        ? new Date(payload.lastBookingDay)
+        : existingPackage.lastBookingDay,
+      availableDates: payload.availableDates
+        ? payload.availableDates.map((d: string) => new Date(d))
+        : existingPackage.availableDates,
+      amenities:
+        payload.amenities !== undefined
+          ? payload.amenities
+          : existingPackage.amenities,
+      itinerary:
+        payload.itinerary !== undefined
+          ? payload.itinerary
+          : existingPackage.itinerary,
+      images: [imageUrl],
+    },
   });
 
-  return result;
+  return updatedPackage;
 };
-
 const deletePackageFromDB = async (id: string, user: JwtPayload) => {
   const pkg = await prisma.package.findUnique({ where: { id } });
   if (!pkg) {
@@ -300,6 +352,6 @@ export const PackageService = {
   getAllPackagesFromDB,
   getMyAgencyPackagesFromDB,
   getPackageByIdFromDB,
-  updatePackageIntoDB,
+  updatePackageIntoDB: updatePackage,
   deletePackageFromDB,
 };

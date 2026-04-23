@@ -54,15 +54,18 @@ const getPackageById = catchAsync(async (req, res) => {
 });
 
 const updatePackage = catchAsync(async (req, res) => {
-  const id = req.params.id as string;
+  const agencyId = req.user.userId;
+  const packageId = req.params.id as string;
+  const payload = req.body;
   const result = await PackageService.updatePackageIntoDB(
-    id,
-    req.body,
-    req.user,
+    agencyId,
+    packageId,
+    payload,
   );
+
   sendResponse(res, {
-    statusCode: httpStatus.OK,
     success: true,
+    statusCode: httpStatus.OK,
     message: "Package updated successfully",
     data: result,
   });
