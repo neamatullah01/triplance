@@ -1,32 +1,49 @@
-"use client";
+"use client"
 
-import { Menu, Search, Bell } from "lucide-react";
-import ThemeToggle from "@/components/shared/ThemeToggle";
+import { Menu, Search, Bell } from "lucide-react"
+import ThemeToggle from "@/components/shared/ThemeToggle"
+import { getUser } from "@/services/auth.service"
+import { useEffect, useState } from "react"
 
 interface AdminTopBarProps {
-  onMenuClick: () => void;
+  onMenuClick: () => void
 }
 
 export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await getUser()
+        setUser(userData)
+      } catch (error) {
+        console.error("Failed to fetch user", error)
+      }
+    }
+
+    fetchUser()
+  }, [])
+
   return (
-    <header className="h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md sm:px-6 dark:border-slate-800 dark:bg-slate-950/80">
       {/* Left */}
       <div className="flex items-center gap-3">
         {/* Hamburger — mobile only */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 -ml-1 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="-ml-1 rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden dark:hover:bg-slate-800 dark:hover:text-white"
           aria-label="Open sidebar"
         >
           <Menu className="h-5 w-5" />
         </button>
 
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
+          <h2 className="text-base leading-tight font-bold text-slate-900 sm:text-lg dark:text-white">
             Dashboard
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block -mt-0.5">
-            Welcome back, Admin
+          <p className="-mt-0.5 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
+            Welcome back, {user?.name || "Admin"}
           </p>
         </div>
       </div>
@@ -35,35 +52,47 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
       <div className="flex items-center gap-2 sm:gap-4">
         {/* Search — md+ */}
         <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search anything..."
-            className="w-48 lg:w-56 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 text-foreground placeholder:text-slate-400 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 transition-all"
+            className="w-48 rounded-xl border-none bg-slate-100 py-2 pr-4 pl-10 text-sm transition-all placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-200 focus:outline-none lg:w-56 dark:bg-slate-800 dark:focus:ring-indigo-900"
           />
         </div>
 
         <ThemeToggle size="8px" />
 
         {/* Bell */}
-        <button className="relative p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+        <button className="relative p-1.5 text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
           <Bell className="h-5 w-5" />
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+          {/* <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
             3
-          </span>
+          </span> */}
         </button>
 
         {/* Avatar */}
-        <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200 dark:border-slate-700">
-          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-            A
-          </div>
+        <div className="flex items-center gap-2 border-l border-slate-200 pl-2 sm:pl-3 dark:border-slate-700">
+          {user?.profileImage ? (
+            <img 
+              src={user.profileImage}
+              alt={user?.name || "Admin"}
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white uppercase">
+              {user?.name ? user.name.charAt(0) : "A"}
+            </div>
+          )}
           <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">Admin</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">Super Admin</p>
+            <p className="max-w-[120px] truncate text-sm leading-tight font-semibold text-slate-900 dark:text-white">
+              {user?.name || "Admin"}
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+              Super Admin
+            </p>
           </div>
         </div>
       </div>
     </header>
-  );
+  )
 }

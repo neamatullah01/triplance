@@ -1,4 +1,8 @@
-import Link from "next/link"
+"use client"
+
+import { useRouter } from "next/navigation"
+import { logoutUser } from "@/services/auth.service"
+import { toast } from "sonner"
 import {
   CheckCircle2,
   Clock,
@@ -8,6 +12,17 @@ import {
 } from "lucide-react"
 
 export default function AgencyApprovalPage() {
+  const router = useRouter()
+
+  const handleLogoutAndLogin = async () => {
+    try {
+      await logoutUser()
+      router.push("/login")
+    } catch (error) {
+      toast.error("Failed to logout")
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 sm:p-12">
       <div className="w-full max-w-2xl rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-xl shadow-slate-200/50 sm:p-12">
@@ -61,11 +76,12 @@ export default function AgencyApprovalPage() {
         </div>
 
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link href="/login">
-            <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-8 py-3.5 font-bold text-white shadow-md shadow-indigo-600/20 transition-all hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none active:scale-95 sm:w-auto">
-              Go to Login
-            </button>
-          </Link>
+          <button
+            onClick={handleLogoutAndLogin}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-8 py-3.5 font-bold text-white shadow-md shadow-indigo-600/20 transition-all hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none active:scale-95 sm:w-auto"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     </div>
