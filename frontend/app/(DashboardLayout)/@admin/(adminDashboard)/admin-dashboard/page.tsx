@@ -65,8 +65,11 @@ export default async function AdminDashboardPage() {
   const agencies = await getPendingAgencies()
   const bookings = await getAllBookingsAdmin("?limit=5&sortBy=createdAt&sortOrder=desc")
 
+  const agenciesData = agencies.data || [];
+  const bookingsData = bookings.data || [];
+
   // Map API response to Component props or use Fallback
-  const displayAgencies = agencies?.length > 0 ? agencies.map((a: any) => ({
+  const displayAgencies = agenciesData?.length > 0 ? agenciesData.map((a: any) => ({
     id: a.id,
     name: a.name || a.agencyName || "Unknown Agency",
     email: a.email,
@@ -74,7 +77,7 @@ export default async function AdminDashboardPage() {
     location: a.location || "Location not provided",
   })) : []
 
-  const displayBookings = bookings?.length > 0 ? bookings.map((b: any) => ({
+  const displayBookings = bookingsData?.length > 0 ? bookingsData.map((b: any) => ({
     id: b.id.substring(0, 8).toUpperCase(),
     traveler: b.user?.name || "Traveler",
     package: b.package?.title || "Package",

@@ -13,9 +13,9 @@ export const getAllPaymentsAdmin = async (query = "") => {
       next: { revalidate: 0 },
     })
     const result = await res.json()
-    return result.success ? result.data : []
+    return result.success ? { data: result.data, meta: result.meta } : { data: [], meta: null }
   } catch (error) {
     console.error("Error fetching admin payments:", error)
-    return []
+    return { data: [], meta: null }
   }
 }

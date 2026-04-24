@@ -11,7 +11,7 @@ export default async function PaymentsPage(props: PageProps) {
 
   // Fetch all to compute summary properly
   const allPaymentsResponse = await getAllPaymentsAdmin("?limit=1000");
-  const allPayments = allPaymentsResponse || [];
+  const allPayments = allPaymentsResponse.data || [];
 
   const summary = {
     totalPaid: allPayments.filter((p: any) => p.status === "PAID").reduce((s: number, p: any) => s + p.amount, 0),
@@ -26,7 +26,7 @@ export default async function PaymentsPage(props: PageProps) {
   }
   const listResponse = await getAllPaymentsAdmin(query);
 
-  const payments = listResponse?.map((p: any) => ({
+  const payments = listResponse.data?.map((p: any) => ({
     id: p.id.substring(0, 8).toUpperCase(),
     bookingId: p.booking?.id?.substring(0, 8).toUpperCase() || "—",
     traveler: p.traveler?.name || "Unknown Traveler",
@@ -37,5 +37,5 @@ export default async function PaymentsPage(props: PageProps) {
     date: new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   })) || [];
 
-  return <PaymentsTable initialPayments={payments} currentTab={queryTab} summary={summary} />;
+  return <PaymentsTable initialPayments={payments} currentTab={queryTab} summary={summary} meta={listResponse.meta} />;
 }

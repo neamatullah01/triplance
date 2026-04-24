@@ -34,10 +34,10 @@ export const getPendingAgencies = async () => {
       }
     )
     const result = await res.json()
-    return result.success ? result.data : []
+    return result.success ? { data: result.data, meta: result.meta } : { data: [], meta: null }
   } catch (error) {
     console.error("Error fetching pending agencies:", error)
-    return []
+    return { data: [], meta: null }
   }
 }
 
@@ -104,10 +104,10 @@ export const getAllBookingsAdmin = async (query = "") => {
       next: { revalidate: 0 },
     })
     const result = await res.json()
-    return result.success ? result.data : []
+    return result.success ? { data: result.data, meta: result.meta } : { data: [], meta: null }
   } catch (error) {
     console.error("Error fetching admin bookings:", error)
-    return []
+    return { data: [], meta: null }
   }
 }
 
@@ -121,10 +121,10 @@ export const getAllUsersAdmin = async (query = "") => {
       next: { revalidate: 0 },
     })
     const result = await res.json()
-    return result.success ? result.data : []
+    return result.success ? { data: result.data, meta: result.meta } : { data: [], meta: null }
   } catch (error) {
     console.error("Error fetching users:", error)
-    return []
+    return { data: [], meta: null }
   }
 }
 
@@ -150,5 +150,41 @@ export const banUser = async (userId: string) => {
       success: false,
       message: error.message || "Failed to ban user",
     }
+  }
+}
+
+export const getAllPostsAdmin = async (query = "") => {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  try {
+    const res = await fetch(`${env.API_URL}/posts${query}`, {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      next: { revalidate: 0 },
+    })
+    const result = await res.json()
+    return result.success ? { data: result.data, meta: result.meta } : { data: [], meta: null }
+  } catch (error) {
+    console.error("Error fetching admin posts:", error)
+    return { data: [], meta: null }
+  }
+}
+
+export const deletePostAdmin = async (postId: string) => {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  try {
+    const res = await fetch(`${env.API_URL}/posts/${postId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const result = await res.json()
+    if (result.success) {
+      revalidatePath("/admin-dashboard/posts")
+    }
+    return result
+  } catch (error) {
+    console.error("Error deleting post:", error)
+    return { success: false, message: "Failed to delete post" }
   }
 }

@@ -18,7 +18,7 @@ export default async function UsersPage(props: PageProps) {
 
   // Map API response to Component props
   const users =
-    usersResponse?.map((u: any) => ({
+    usersResponse.data?.map((u: any) => ({
       id: u.id,
       name: u.name || u.agencyName || "Unknown",
       email: u.email,

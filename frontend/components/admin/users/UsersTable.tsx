@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, MoreHorizontal, Shield, Ban, UserCheck } from "lucide-react";
+import { Search, MoreHorizontal, Shield, Ban, UserCheck, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { banUser } from "@/services/admin.service";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -124,8 +124,21 @@ export function UsersTable({ initialUsers, currentTab }: UsersTableProps) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed text-center">
+          <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+            <SearchX className="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No users found</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+            {search 
+              ? `No results match your search for "${search}". Try adjusting your keywords.`
+              : "There are no users to display in this category right now."}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
@@ -186,7 +199,8 @@ export function UsersTable({ initialUsers, currentTab }: UsersTableProps) {
             </tbody>
           </table>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export default async function AgenciesPage(props: PageProps) {
   const agenciesResponse = await getAllUsersAdmin(query)
 
   const agencies =
-    agenciesResponse?.map((u: any) => ({
+    agenciesResponse.data?.map((u: any) => ({
       id: u.id,
       name: u.name || u.agencyName || "Unknown Agency",
       email: u.email,

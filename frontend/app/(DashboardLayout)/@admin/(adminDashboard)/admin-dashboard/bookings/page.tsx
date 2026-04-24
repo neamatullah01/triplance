@@ -16,7 +16,7 @@ export default async function BookingsPage(props: PageProps) {
 
   const bookingsResponse = await getAllBookingsAdmin(query);
 
-  const bookings = bookingsResponse?.map((b: any) => ({
+  const bookings = bookingsResponse.data?.map((b: any) => ({
     id: b.id.substring(0, 8).toUpperCase(), // Extract an 8 char short ID from UUID
     traveler: b.traveler?.name || "Unknown Traveler",
     package: b.package?.title || "Unknown Package",

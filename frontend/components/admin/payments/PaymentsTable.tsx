@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, RotateCcw, Eye, DollarSign, SearchX } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { Pagination } from "@/components/shared/Pagination";
 
 interface Payment {
   id: string;
@@ -24,6 +25,7 @@ interface PaymentsTableProps {
     totalRefunded: number;
     totalPending: number;
   };
+  meta: any;
 }
 
 function PaymentStatusBadge({ status }: { status: string }) {
@@ -35,7 +37,7 @@ function PaymentStatusBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize ${styles[status] || ""}`}>{status}</span>;
 }
 
-export function PaymentsTable({ initialPayments, currentTab, summary }: PaymentsTableProps) {
+export function PaymentsTable({ initialPayments, currentTab, summary, meta }: PaymentsTableProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -151,6 +153,7 @@ export function PaymentsTable({ initialPayments, currentTab, summary }: Payments
               </tbody>
             </table>
           </div>
+          <Pagination meta={meta} />
         </div>
       )}
     </div>
