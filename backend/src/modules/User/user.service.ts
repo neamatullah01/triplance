@@ -1,15 +1,30 @@
-import httpStatus from 'http-status';
-import AppError from '../../errors/AppError';
-import { prisma } from '../../lib/prisma';
-import { JwtPayload } from 'jsonwebtoken';
+import httpStatus from "http-status";
+import AppError from "../../errors/AppError";
+import { prisma } from "../../lib/prisma";
+import { JwtPayload } from "jsonwebtoken";
 
 const getAllUsers = async (query: any) => {
-  const { page = 1, limit = 10, role } = query;
+  const { page = 1, limit = 10, role, isVerified, tab } = query;
   const skip = (Number(page) - 1) * Number(limit);
 
   const whereConditions: any = {};
+
+  // 1. Handle Role Filtering
   if (role) {
-    whereConditions.role = role;
+    whereConditions.role = (role as string).toUpperCase();
+  } else {
+    whereConditions.role = { not: "ADMIN" };
+  }
+
+  // 2. Handle Verification Filter
+  if (isVerified !== undefined) {
+    whereConditions.isVerified = isVerified === "true" || isVerified === true;
+  }
+
+  // 3. Handle Tab Logic (Banned vs Active)
+  if (tab === "banned") {
+    // Show ONLY banned users
+    whereConditions.isBanned = true;
   }
 
   const users = await prisma.user.findMany({
@@ -27,8 +42,14 @@ const getAllUsers = async (query: any) => {
       isVerified: true,
       isBanned: true,
       createdAt: true,
+      _count: {
+        select: {
+          packages: true,
+          bookings: true,
+        },
+      },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
   });
 
   const total = await prisma.user.count({ where: whereConditions });
@@ -70,7 +91,7 @@ const getUserById = async (id: string) => {
         },
       },
       posts: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           author: {
             select: {
@@ -84,10 +105,10 @@ const getUserById = async (id: string) => {
         },
       },
       packages: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       },
       reviewsReceived: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           traveler: {
             select: {
@@ -104,15 +125,22 @@ const getUserById = async (id: string) => {
   });
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
 
   return user;
 };
 
-const updateProfile = async (id: string, payload: any, authUser: JwtPayload) => {
-  if (authUser.role !== 'ADMIN' && authUser.userId !== id) {
-    throw new AppError(httpStatus.FORBIDDEN, 'You are not authorized to update this profile');
+const updateProfile = async (
+  id: string,
+  payload: any,
+  authUser: JwtPayload,
+) => {
+  if (authUser.role !== "ADMIN" && authUser.userId !== id) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to update this profile",
+    );
   }
 
   const user = await prisma.user.findUnique({
@@ -120,7 +148,7 @@ const updateProfile = async (id: string, payload: any, authUser: JwtPayload) => 
   });
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
 
   const updatedUser = await prisma.user.update({
@@ -148,7 +176,7 @@ const deleteUser = async (id: string) => {
   });
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
 
   const deletedUser = await prisma.user.delete({
@@ -158,48 +186,48 @@ const deleteUser = async (id: string) => {
   return deletedUser;
 };
 
-const banUser = async (id: string, payload: { isBanned: boolean }) => {
+const banUser = async (id: string) => {
   const user = await prisma.user.findUnique({
     where: { id },
   });
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
 
   const updatedUser = await prisma.user.update({
     where: { id },
     data: {
-      isBanned: payload.isBanned,
+      isBanned: !user.isBanned,
     },
     select: {
       id: true,
       email: true,
       name: true,
       isBanned: true,
-    }
+    },
   });
 
   return updatedUser;
 };
 
-const approveAgency = async (id: string, payload: { isVerified: boolean }) => {
+const approveAgency = async (id: string) => {
   const user = await prisma.user.findUnique({
     where: { id },
   });
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
 
-  if (user.role !== 'AGENCY') {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Only agencies can be approved');
+  if (user.role !== "AGENCY") {
+    throw new AppError(httpStatus.BAD_REQUEST, "Only agencies can be approved");
   }
 
   const updatedUser = await prisma.user.update({
     where: { id },
     data: {
-      isVerified: payload.isVerified,
+      isVerified: true,
     },
     select: {
       id: true,
@@ -207,7 +235,7 @@ const approveAgency = async (id: string, payload: { isVerified: boolean }) => {
       name: true,
       role: true,
       isVerified: true,
-    }
+    },
   });
 
   return updatedUser;
@@ -232,8 +260,10 @@ const getSuggestedUsers = async (authUser: JwtPayload, query: any) => {
   const searchFilter = search
     ? {
         OR: [
-          { name: { contains: search as string, mode: 'insensitive' as const } },
-          { bio: { contains: search as string, mode: 'insensitive' as const } },
+          {
+            name: { contains: search as string, mode: "insensitive" as const },
+          },
+          { bio: { contains: search as string, mode: "insensitive" as const } },
         ],
       }
     : {};
@@ -249,7 +279,7 @@ const getSuggestedUsers = async (authUser: JwtPayload, query: any) => {
         followingId: { notIn: excludeIds },
       },
       select: { followingId: true },
-      distinct: ['followingId'],
+      distinct: ["followingId"],
       take: skip + take,
     });
 
@@ -282,7 +312,7 @@ const getSuggestedUsers = async (authUser: JwtPayload, query: any) => {
     suggested = await prisma.user.findMany({
       where: {
         id: { notIn: excludeIds },
-        role: 'TRAVELER',
+        role: "TRAVELER",
         isBanned: false,
         ...searchFilter,
       },
@@ -295,7 +325,7 @@ const getSuggestedUsers = async (authUser: JwtPayload, query: any) => {
         isVerified: true,
         _count: { select: { followers: true, posts: true } },
       },
-      orderBy: { followers: { _count: 'desc' } },
+      orderBy: { followers: { _count: "desc" } },
       skip,
       take,
     });
@@ -326,15 +356,27 @@ const getAllAgenciesForUser = async (authUser: JwtPayload, query: any) => {
   const take = Number(limit);
 
   const baseWhere = {
-    role: 'AGENCY' as const,
+    role: "AGENCY" as const,
     isBanned: false,
     isVerified: true,
     ...(search
       ? {
           OR: [
-            { name: { contains: search as string, mode: 'insensitive' as const } },
-            { bio: { contains: search as string, mode: 'insensitive' as const } },
-            { agencyName: { contains: search as string, mode: 'insensitive' as const } },
+            {
+              name: {
+                contains: search as string,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              bio: { contains: search as string, mode: "insensitive" as const },
+            },
+            {
+              agencyName: {
+                contains: search as string,
+                mode: "insensitive" as const,
+              },
+            },
           ],
         }
       : {}),
@@ -373,7 +415,7 @@ const getAllAgenciesForUser = async (authUser: JwtPayload, query: any) => {
       },
     },
   };
-  
+
   // We notice from schema that Cover Image does not exist in schema.prisma, so remove it.
   delete (selectFields as any).coverImage;
 
@@ -383,10 +425,12 @@ const getAllAgenciesForUser = async (authUser: JwtPayload, query: any) => {
       skip,
       take,
       select: selectFields,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
-    mappedAgencies = [...unfollowedAgencies.map(a => ({ ...a, isFollowed: false }))];
+    mappedAgencies = [
+      ...unfollowedAgencies.map((a) => ({ ...a, isFollowed: false })),
+    ];
 
     if (mappedAgencies.length < take) {
       const remainingTake = take - mappedAgencies.length;
@@ -395,9 +439,12 @@ const getAllAgenciesForUser = async (authUser: JwtPayload, query: any) => {
         skip: 0,
         take: remainingTake,
         select: selectFields,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
-      mappedAgencies = [...mappedAgencies, ...followedAgencies.map(a => ({ ...a, isFollowed: true }))];
+      mappedAgencies = [
+        ...mappedAgencies,
+        ...followedAgencies.map((a) => ({ ...a, isFollowed: true })),
+      ];
     }
   } else {
     const followedSkip = skip - totalUnfollowed;
@@ -406,9 +453,11 @@ const getAllAgenciesForUser = async (authUser: JwtPayload, query: any) => {
       skip: followedSkip,
       take,
       select: selectFields,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
-    mappedAgencies = [...followedAgencies.map(a => ({ ...a, isFollowed: true }))];
+    mappedAgencies = [
+      ...followedAgencies.map((a) => ({ ...a, isFollowed: true })),
+    ];
   }
 
   return {

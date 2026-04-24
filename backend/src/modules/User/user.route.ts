@@ -41,14 +41,12 @@ router.delete("/:id", auth("ADMIN"), UserController.deleteUser);
 router.patch(
   "/:id/ban",
   auth("ADMIN"),
-  validateRequest(UserValidation.banUserValidationSchema),
   UserController.banUser,
 );
 
 router.patch(
   "/:id/approve",
   auth("ADMIN"),
-  validateRequest(UserValidation.approveAgencyValidationSchema),
   UserController.approveAgency,
 );
 

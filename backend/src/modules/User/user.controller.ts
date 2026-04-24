@@ -79,7 +79,7 @@ const deleteUser = catchAsync(async (req, res) => {
 
 const banUser = catchAsync(async (req, res) => {
   const id = req.params.id as string;
-  const result = await UserService.banUser(id, req.body);
+  const result = await UserService.banUser(id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -91,7 +91,7 @@ const banUser = catchAsync(async (req, res) => {
 
 const approveAgency = catchAsync(async (req, res) => {
   const id = req.params.id as string;
-  const result = await UserService.approveAgency(id, req.body);
+  const result = await UserService.approveAgency(id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

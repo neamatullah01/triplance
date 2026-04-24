@@ -76,20 +76,32 @@ const createBookingIntoDB = async (payload: any, user: JwtPayload) => {
   });
 };
 const getAllBookingsFromDB = async (query: any) => {
-  const { page = 1, limit = 10 } = query;
+  const { page = 1, limit = 10, status } = query;
   const skip = (Number(page) - 1) * Number(limit);
 
   const bookings = await prisma.booking.findMany({
+    where: status ? { status: status.toUpperCase() } : {},
     skip,
     take: Number(limit),
     orderBy: { createdAt: "desc" },
     include: {
       traveler: { select: { id: true, name: true, email: true } },
-      package: { select: { id: true, title: true, maxCapacity: true } },
+      package: {
+        select: {
+          id: true,
+          title: true,
+          maxCapacity: true,
+          agency: {
+            select: { id: true, name: true, email: true, agencyName: true },
+          },
+        },
+      },
     },
   });
 
-  const total = await prisma.booking.count();
+  const total = await prisma.booking.count({
+    where: status ? { status: status.toUpperCase() } : {},
+  });
 
   return {
     meta: { page: Number(page), limit: Number(limit), total },
