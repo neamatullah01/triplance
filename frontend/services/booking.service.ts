@@ -19,3 +19,29 @@ export const getUserBookings = async () => {
     return null
   }
 }
+
+export async function getAgencyBookings(params: Record<string, any>) {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  const searchParams = new URLSearchParams()
+
+  // Dynamically append valid params
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) searchParams.append(key, String(value))
+  })
+
+  const response = await fetch(
+    `${env.API_URL}/bookings/agency?${searchParams.toString()}`,
+    {
+      cache: "no-store", // Always fetch fresh booking data
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.message || "Failed to fetch bookings")
+
+  return data
+}
