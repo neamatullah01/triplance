@@ -43,6 +43,8 @@ model User {
   
   agencyName      String?   // Maps to "Agency Name"
   website         String?   // Maps to "Website (optional)"
+  phone           String?   // Maps to "Phone Number"
+  location        String?   // Maps to "Location" (Could be "From: Dhaka, Bangladesh" or specific address)
 
   rating          Float     @default(0)
   

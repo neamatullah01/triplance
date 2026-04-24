@@ -131,6 +131,77 @@ const getMyBookingsFromDB = async (user: JwtPayload, query: any) => {
   };
 };
 
+const getAgencyBookingsFromDB = async (user: JwtPayload, query: any) => {
+  const { page = 1, limit = 10, searchTerm, status } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const andConditions: Prisma.BookingWhereInput[] = [
+    { package: { agencyId: user.userId } },
+  ];
+
+  if (searchTerm) {
+    andConditions.push({
+      OR: [
+        {
+          traveler: {
+            name: { contains: searchTerm as string, mode: "insensitive" },
+          },
+        },
+        {
+          traveler: {
+            email: { contains: searchTerm as string, mode: "insensitive" },
+          },
+        },
+        {
+          package: {
+            title: { contains: searchTerm as string, mode: "insensitive" },
+          },
+        },
+      ],
+    });
+  }
+
+  if (status) {
+    andConditions.push({
+      status: (status as string).toUpperCase() as BookingStatus,
+    });
+  }
+
+  const whereConditions: Prisma.BookingWhereInput = {
+    AND: andConditions,
+  };
+
+  const bookings = await prisma.booking.findMany({
+    where: whereConditions,
+    skip,
+    take: Number(limit),
+    orderBy: { createdAt: "desc" },
+    include: {
+      traveler: {
+        select: { id: true, name: true, email: true, profileImage: true },
+      },
+      package: {
+        select: {
+          id: true,
+          title: true,
+          maxCapacity: true,
+          price: true,
+          destination: true,
+        },
+      },
+    },
+  });
+
+  const total = await prisma.booking.count({
+    where: whereConditions,
+  });
+
+  return {
+    meta: { page: Number(page), limit: Number(limit), total },
+    data: bookings,
+  };
+};
+
 const getBookingByIdFromDB = async (id: string, user: JwtPayload) => {
   const booking = await prisma.booking.findUnique({
     where: { id },
@@ -276,6 +347,7 @@ export const BookingService = {
   createBookingIntoDB,
   getAllBookingsFromDB,
   getMyBookingsFromDB,
+  getAgencyBookingsFromDB,
   getBookingByIdFromDB,
   updateBookingStatusIntoDB,
   cancelBookingFromDB,

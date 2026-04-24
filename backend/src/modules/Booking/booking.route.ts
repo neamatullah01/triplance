@@ -26,6 +26,12 @@ router.get(
 );
 
 router.get(
+  '/agency',
+  auth('AGENCY'),
+  BookingController.getAgencyBookings
+);
+
+router.get(
   '/:id',
   auth('TRAVELER', 'AGENCY', 'ADMIN'),
   BookingController.getBookingById
