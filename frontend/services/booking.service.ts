@@ -3,11 +3,17 @@
 import { cookies } from "next/headers"
 import { env } from "@/lib/env"
 
-export const getUserBookings = async () => {
+export const getUserBookings = async (status?: string) => {
   const storeCookie = await cookies()
   const token = storeCookie.get("token")?.value
   try {
-    const res = await fetch(`${env.API_URL}/bookings/my`, {
+    const searchParams = new URLSearchParams()
+    if (status) searchParams.set("status", status)
+
+    const query = searchParams.toString()
+    const url = `${env.API_URL}/bookings/my${query ? `?${query}` : ""}`
+
+    const res = await fetch(url, {
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       next: { tags: ["my-bookings"], revalidate: 0 },

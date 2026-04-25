@@ -28,6 +28,7 @@ import {
 
 import { CreatePostModal } from "@/components/feed/CreatePostModal"
 import { EditProfileModal } from "./EditProfileModal"
+import { MyReviewsTab } from "./MyReviewsTab"
 import { FollowButton } from "@/components/shared/FollowButton"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -904,19 +905,8 @@ export function ProfileClient({
           )}
 
           {activeTab === "reviews" && (
-            <div className="flex flex-col gap-4">
-              <motion.div
-                variants={itemVariants}
-                className="rounded-3xl border-2 border-dashed border-slate-200 py-20 text-center dark:border-slate-800"
-              >
-                <Star className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  No reviews
-                </h3>
-                <p className="text-slate-500">
-                  Review your trips after you complete them.
-                </p>
-              </motion.div>
+            <div className="mx-auto flex max-w-3xl flex-col gap-6">
+              <MyReviewsTab />
             </div>
           )}
 

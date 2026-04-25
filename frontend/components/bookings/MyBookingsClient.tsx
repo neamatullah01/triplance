@@ -1,13 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "sonner"
+import { getUserBookings } from "@/services/booking.service"
+import { ReviewModal } from "@/components/bookings/ReviewModal"
 import {
   MapPin,
   CalendarDays,
   Users,
-  CreditCard,
   MessageCircle,
   Star,
   ChevronRight,
@@ -16,6 +18,8 @@ import {
   Ticket,
   Building2,
   ReceiptText,
+  Loader2,
+  ListCheck,
 } from "lucide-react"
 
 // --- Animation Variants ---
@@ -29,6 +33,13 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 }
 
+// Map UI tab labels to the API status query values
+const TAB_STATUS_MAP = {
+  UPCOMING: "CONFIRMED",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+} as const
+
 export function MyBookingsClient({
   initialBookings,
 }: {
@@ -38,25 +49,17 @@ export function MyBookingsClient({
     "UPCOMING" | "COMPLETED" | "CANCELLED"
   >("UPCOMING")
   const [bookings, setBookings] = useState(initialBookings)
+  const [isPending, startTransition] = useTransition()
+  // null = closed; string = bookingId whose review modal is open
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null)
 
-  const getTabStatus = (booking: any) => {
-    if (booking.status === "CANCELLED") return "CANCELLED"
-    const dateString = booking.selectedDate || booking.startDate
-    if (!dateString) return "UPCOMING"
-    const selectedDate = new Date(dateString)
-    const now = new Date()
-    // Compare dates ignoring time
-    now.setHours(0, 0, 0, 0)
-    selectedDate.setHours(0, 0, 0, 0)
-    if (selectedDate < now) {
-      return "COMPLETED"
-    }
-    return "UPCOMING"
+  const handleTabChange = (tab: "UPCOMING" | "COMPLETED" | "CANCELLED") => {
+    setActiveTab(tab)
+    startTransition(async () => {
+      const response = await getUserBookings(TAB_STATUS_MAP[tab])
+      setBookings(response?.data || [])
+    })
   }
-
-  const filteredBookings = bookings.filter(
-    (b: any) => getTabStatus(b) === activeTab
-  )
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-BD", {
@@ -94,7 +97,7 @@ export function MyBookingsClient({
           {(["UPCOMING", "COMPLETED", "CANCELLED"] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
               className={`relative flex-1 cursor-pointer rounded-xl py-2.5 text-sm font-bold transition-colors ${
                 activeTab === tab
                   ? "text-slate-900 dark:text-white"
@@ -115,17 +118,26 @@ export function MyBookingsClient({
           ))}
         </div>
 
+        {/* Loading spinner — shown above the (faded) list */}
+        {isPending && (
+          <div className="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            Loading bookings…
+          </div>
+        )}
+
         {/* Booking List */}
         <motion.div
           key={activeTab}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="flex flex-col gap-6"
+          className={`flex flex-col gap-6 transition-opacity duration-200 ${isPending ? "pointer-events-none opacity-0" : "opacity-100"}`}
         >
           <AnimatePresence mode="popLayout">
-            {filteredBookings.length > 0 ? (
-              filteredBookings.map((booking) => (
+            {/* Cards — only rendered when not loading and there are results */}
+            {!isPending &&
+              bookings.map((booking) => (
                 <motion.article
                   key={booking.id}
                   variants={itemVariants}
@@ -144,17 +156,17 @@ export function MyBookingsClient({
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute top-4 left-4">
-                      {getTabStatus(booking) === "UPCOMING" && (
+                      {activeTab === "UPCOMING" && (
                         <span className="flex items-center gap-1.5 rounded-lg bg-indigo-600/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md">
                           <Clock className="h-3.5 w-3.5" /> Upcoming
                         </span>
                       )}
-                      {getTabStatus(booking) === "COMPLETED" && (
+                      {activeTab === "COMPLETED" && (
                         <span className="flex items-center gap-1.5 rounded-lg bg-emerald-500/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md">
                           <CheckCircle2 className="h-3.5 w-3.5" /> Completed
                         </span>
                       )}
-                      {getTabStatus(booking) === "CANCELLED" && (
+                      {activeTab === "CANCELLED" && (
                         <span className="flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md">
                           <Clock className="h-3.5 w-3.5" /> Cancelled
                         </span>
@@ -214,7 +226,7 @@ export function MyBookingsClient({
                         </div>
                         <div className="col-span-2 sm:col-span-1">
                           <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                            <CreditCard className="h-3.5 w-3.5" /> Payment
+                            <ListCheck className="h-3.5 w-3.5" /> Status
                           </p>
                           <p className="flex items-center gap-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="h-4 w-4" />{" "}
@@ -228,7 +240,6 @@ export function MyBookingsClient({
 
                     {/* Footer Actions */}
                     <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-5 sm:flex-row dark:border-slate-800">
-                      {/* Agency Info */}
                       {/* Agency Info */}
                       {booking.package?.agency ? (
                         <div className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto dark:text-slate-300">
@@ -249,7 +260,7 @@ export function MyBookingsClient({
 
                       {/* Dynamic Action Buttons based on Status */}
                       <div className="flex w-full items-center gap-3 sm:w-auto">
-                        {getTabStatus(booking) === "UPCOMING" && (
+                        {activeTab === "UPCOMING" && (
                           <>
                             {booking.package?.agency?.id ? (
                               <Link
@@ -272,14 +283,24 @@ export function MyBookingsClient({
                           </>
                         )}
 
-                        {getTabStatus(booking) === "COMPLETED" && (
+                        {activeTab === "COMPLETED" && (
                           <>
-                            <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 sm:flex-none dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                            <button
+                              onClick={() =>
+                                toast.info(
+                                  "Invoice feature coming soon! We'll notify you when it's ready.",
+                                  { duration: 4000 }
+                                )
+                              }
+                              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 sm:flex-none dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                            >
                               <ReceiptText className="h-4 w-4" /> Invoice
                             </button>
-                            <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-amber-500/20 transition-colors hover:bg-amber-600 sm:flex-none">
-                              <Star className="h-4 w-4 fill-white" /> Leave
-                              Review
+                            <button
+                              onClick={() => setReviewBookingId(booking.id)}
+                              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-amber-500/20 transition-colors hover:bg-amber-600 sm:flex-none"
+                            >
+                              <Star className="h-4 w-4 fill-white" /> Leave Review
                             </button>
                           </>
                         )}
@@ -287,10 +308,12 @@ export function MyBookingsClient({
                     </div>
                   </div>
                 </motion.article>
-              ))
-            ) : (
-              /* Empty State */
+              ))}
+
+            {/* Empty state — only shown after loading completes with zero results */}
+            {!isPending && bookings.length === 0 && (
               <motion.div
+                key="empty"
                 variants={itemVariants}
                 className="rounded-3xl border-2 border-dashed border-slate-200 bg-white/50 py-20 text-center dark:border-slate-800 dark:bg-slate-900/50"
               >
@@ -313,6 +336,17 @@ export function MyBookingsClient({
           </AnimatePresence>
         </motion.div>
       </div>
+
+      {/* Review Modal — rendered outside the scroll container */}
+      {reviewBookingId && (
+        <ReviewModal
+          bookingId={reviewBookingId}
+          packageTitle={
+            bookings.find((b) => b.id === reviewBookingId)?.package?.title
+          }
+          onClose={() => setReviewBookingId(null)}
+        />
+      )}
     </div>
   )
 }

@@ -18,8 +18,8 @@ export default async function BookingsPage() {
     redirect("/login") // Redirect to your login/auth page if they aren't authenticated
   }
 
-  // 2. Fetch the user's actual bookings from your backend
-  const response = await getUserBookings();
+  // 2. Pre-fetch CONFIRMED bookings for the default "Upcoming" tab
+  const response = await getUserBookings("CONFIRMED");
   const userBookings = response?.data || [];
 
   return (
