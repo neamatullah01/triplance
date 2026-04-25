@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
-import { initiatePaymentService } from "./payment.service";
+import { initiatePaymentService, PaymentService } from "./payment.service";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import httpStatus from "http-status";
@@ -90,4 +90,20 @@ export const paymentWebhookController = async (req: Request, res: Response) => {
 
   // Always return a 200 to Stripe so they know we received the webhook
   res.status(200).json({ received: true });
+};
+
+const getAllPayments = catchAsync(async (req: Request, res: Response) => {
+  const result = await PaymentService.getAllPayments(req.query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Payments retrieved successfully",
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
+export const PaymentController = {
+  getAllPayments,
 };

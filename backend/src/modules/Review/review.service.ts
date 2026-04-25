@@ -1,36 +1,45 @@
-import httpStatus from 'http-status';
-import { JwtPayload } from 'jsonwebtoken';
-import { Prisma } from '../../../generated/prisma/client';
-import AppError from '../../errors/AppError';
-import { prisma } from '../../lib/prisma';
+import httpStatus from "http-status";
+import { JwtPayload } from "jsonwebtoken";
+import { Prisma } from "../../../generated/prisma/client";
+import AppError from "../../errors/AppError";
+import { prisma } from "../../lib/prisma";
 
 const createReviewIntoDB = async (payload: any, user: JwtPayload) => {
   return await prisma.$transaction(async (tx) => {
     // 1. Fetch booking
     const booking = await tx.booking.findUnique({
       where: { id: payload.bookingId },
-      include: { package: true }
+      include: { package: true },
     });
 
     if (!booking) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+      throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
     }
 
     if (booking.travelerId !== user.userId) {
-      throw new AppError(httpStatus.FORBIDDEN, 'You can only review your own bookings');
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You can only review your own bookings",
+      );
     }
 
-    if (booking.status !== 'COMPLETED') {
-      throw new AppError(httpStatus.BAD_REQUEST, 'You can only review after the trip is completely finished');
+    if (booking.status !== "COMPLETED") {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "You can only review after the trip is completely finished",
+      );
     }
 
     // 2. Check if review already exists
     const existingReview = await tx.review.findUnique({
-      where: { bookingId: booking.id }
+      where: { bookingId: booking.id },
     });
 
     if (existingReview) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'A review already exists for this booking');
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "A review already exists for this booking",
+      );
     }
 
     // 3. Create review
@@ -41,30 +50,30 @@ const createReviewIntoDB = async (payload: any, user: JwtPayload) => {
         bookingId: booking.id,
         packageId: booking.packageId,
         agencyId: booking.package.agencyId,
-        travelerId: user.userId
-      }
+        travelerId: user.userId,
+      },
     });
 
     // 4. Recalculate package rating
     const packageReviews = await tx.review.aggregate({
       where: { packageId: booking.packageId },
-      _avg: { rating: true }
+      _avg: { rating: true },
     });
-    
+
     await tx.package.update({
       where: { id: booking.packageId },
-      data: { rating: packageReviews._avg.rating || 0 }
+      data: { rating: packageReviews._avg.rating || 0 },
     });
 
     // 5. Recalculate agency rating
     const agencyReviews = await tx.review.aggregate({
       where: { agencyId: booking.package.agencyId },
-      _avg: { rating: true }
+      _avg: { rating: true },
     });
-    
+
     await tx.user.update({
       where: { id: booking.package.agencyId },
-      data: { rating: agencyReviews._avg.rating || 0 }
+      data: { rating: agencyReviews._avg.rating || 0 },
     });
 
     return newReview;
@@ -78,17 +87,20 @@ const getAllReviewsFromDB = async (query: any) => {
   const reviews = await prisma.review.findMany({
     skip,
     take: Number(limit),
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     include: {
       traveler: { select: { id: true, name: true, profileImage: true } },
       package: { select: { id: true, title: true } },
-      agency: { select: { id: true, name: true } }
-    }
+      agency: { select: { id: true, name: true } },
+    },
   });
 
   const total = await prisma.review.count();
 
-  return { meta: { page: Number(page), limit: Number(limit), total }, data: reviews };
+  return {
+    meta: { page: Number(page), limit: Number(limit), total },
+    data: reviews,
+  };
 };
 
 const getReviewsForPackageFromDB = async (packageId: string, query: any) => {
@@ -99,55 +111,92 @@ const getReviewsForPackageFromDB = async (packageId: string, query: any) => {
     where: { packageId },
     skip,
     take: Number(limit),
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     include: {
-      traveler: { select: { id: true, name: true, profileImage: true } }
-    }
+      traveler: { select: { id: true, name: true, profileImage: true } },
+    },
   });
 
   const total = await prisma.review.count({ where: { packageId } });
 
-  return { meta: { page: Number(page), limit: Number(limit), total }, data: reviews };
+  return {
+    meta: { page: Number(page), limit: Number(limit), total },
+    data: reviews,
+  };
+};
+
+const getReviewByBookingAndUserFromDB = async (
+  bookingId: string,
+  user: JwtPayload,
+) => {
+  // bookingId is a unique key on Review — single index lookup, no scan
+  const review = await prisma.review.findUnique({
+    where: { bookingId },
+    include: {
+      traveler: { select: { id: true, name: true, profileImage: true } },
+      package: { select: { id: true, title: true } },
+      agency: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!review) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "No review found for this booking",
+    );
+  }
+
+  if (review.travelerId !== user.userId && user.role !== "ADMIN") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "This review does not belong to you",
+    );
+  }
+
+  return review;
 };
 
 const deleteReviewFromDB = async (id: string, user: JwtPayload) => {
   return await prisma.$transaction(async (tx) => {
     const review = await tx.review.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!review) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Review not found');
+      throw new AppError(httpStatus.NOT_FOUND, "Review not found");
     }
 
-    if (review.travelerId !== user.userId && user.role !== 'ADMIN') {
-      throw new AppError(httpStatus.FORBIDDEN, 'Unauthorized to delete this review');
+    if (review.travelerId !== user.userId && user.role !== "ADMIN") {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Unauthorized to delete this review",
+      );
     }
 
     const deletedReview = await tx.review.delete({
-      where: { id }
+      where: { id },
     });
 
     // Recalculate package rating
     const packageReviews = await tx.review.aggregate({
       where: { packageId: review.packageId },
-      _avg: { rating: true }
+      _avg: { rating: true },
     });
-    
+
     await tx.package.update({
       where: { id: review.packageId },
-      data: { rating: packageReviews._avg.rating || 0 }
+      data: { rating: packageReviews._avg.rating || 0 },
     });
 
     // Recalculate agency rating
     const agencyReviews = await tx.review.aggregate({
       where: { agencyId: review.agencyId },
-      _avg: { rating: true }
+      _avg: { rating: true },
     });
-    
+
     await tx.user.update({
       where: { id: review.agencyId },
-      data: { rating: agencyReviews._avg.rating || 0 }
+      data: { rating: agencyReviews._avg.rating || 0 },
     });
 
     return deletedReview;
@@ -158,5 +207,6 @@ export const ReviewService = {
   createReviewIntoDB,
   getAllReviewsFromDB,
   getReviewsForPackageFromDB,
+  getReviewByBookingAndUserFromDB,
   deleteReviewFromDB,
 };

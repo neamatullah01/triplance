@@ -1,14 +1,14 @@
-import httpStatus from 'http-status';
-import catchAsync from '../../utils/catchAsync';
-import sendResponse from '../../utils/sendResponse';
-import { ReviewService } from './review.service';
+import httpStatus from "http-status";
+import catchAsync from "../../utils/catchAsync";
+import sendResponse from "../../utils/sendResponse";
+import { ReviewService } from "./review.service";
 
 const createReview = catchAsync(async (req, res) => {
   const result = await ReviewService.createReviewIntoDB(req.body, req.user);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: 'Review submitted successfully',
+    message: "Review submitted successfully",
     data: result,
   });
 });
@@ -18,7 +18,7 @@ const getAllReviews = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Reviews retrieved successfully',
+    message: "Reviews retrieved successfully",
     meta: result.meta,
     data: result.data,
   });
@@ -30,7 +30,7 @@ const getReviewsForPackage = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Package reviews retrieved successfully',
+    message: "Package reviews retrieved successfully",
     meta: result.meta,
     data: result.data,
   });
@@ -42,7 +42,21 @@ const deleteReview = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Review deleted successfully',
+    message: "Review deleted successfully",
+    data: result,
+  });
+});
+
+const getReviewByBooking = catchAsync(async (req, res) => {
+  const { bookingId } = req.params;
+  const result = await ReviewService.getReviewByBookingAndUserFromDB(
+    bookingId as string,
+    req.user,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Review retrieved successfully",
     data: result,
   });
 });
@@ -51,5 +65,6 @@ export const ReviewController = {
   createReview,
   getAllReviews,
   getReviewsForPackage,
+  getReviewByBooking,
   deleteReview,
 };

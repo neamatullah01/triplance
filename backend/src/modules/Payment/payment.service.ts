@@ -44,3 +44,71 @@ export const initiatePaymentService = async (bookingId: string) => {
 
   return { paymentUrl: session.url };
 };
+
+const getAllPayments = async (query: Record<string, unknown>) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const sortBy = (query.sortBy as string) || "createdAt";
+  const sortOrder = (query.sortOrder as string) || "desc";
+
+  // Extract filters
+  const { status, gateway, searchTerm } = query;
+
+  // Build the where clause
+  const whereConditions: any = {};
+
+  if (status) {
+    whereConditions.status = status;
+  }
+
+  if (gateway) {
+    whereConditions.gateway = gateway;
+  }
+
+  if (searchTerm) {
+    whereConditions.OR = [
+      {
+        transactionId: { contains: searchTerm as string, mode: "insensitive" },
+      },
+      { id: { contains: searchTerm as string, mode: "insensitive" } },
+    ];
+  }
+
+  const result = await prisma.payment.findMany({
+    where: whereConditions,
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+    include: {
+      booking: true,
+      traveler: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  const total = await prisma.payment.count({
+    where: whereConditions,
+  });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: result,
+  };
+};
+
+export const PaymentService = {
+  getAllPayments,
+};
