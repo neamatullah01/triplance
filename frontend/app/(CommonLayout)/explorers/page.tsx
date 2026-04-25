@@ -250,9 +250,10 @@ export default function ExplorersPage() {
               {explorers.map((explorer) => {
                 const isFollowing = following.has(explorer.id);
                 return (
-                  <div
+                  <Link
                     key={explorer.id}
-                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col"
+                    href={`/explorers/${explorer.id}`}
+                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col block"
                   >
                     {/* Card Banner */}
                     <div className="h-20 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-400 relative">
@@ -280,7 +281,7 @@ export default function ExplorersPage() {
                     <div className="px-5 pt-3 pb-5 flex flex-col flex-1">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">
-                          <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate text-base">
+                          <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {explorer.name}
                           </h3>
                           <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${getRoleColor(explorer.role)}`}>
@@ -326,7 +327,7 @@ export default function ExplorersPage() {
                         onFollowChange={(st) => handleFollowChange(explorer.id, st)}
                       />
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

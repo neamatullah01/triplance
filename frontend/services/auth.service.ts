@@ -163,3 +163,20 @@ export const logoutUser = async () => {
   const storeCookie = await cookies()
   storeCookie.delete("token")
 }
+
+export const getExplorerProfile = async (userId: string) => {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  try {
+    const res = await fetch(`${env.API_URL}/users/${userId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      next: { tags: [`explorer-${userId}`], revalidate: 60 },
+    })
+    const result = await res.json()
+    if (result.success) return result.data
+    return null
+  } catch (error) {
+    console.error("Error fetching explorer profile:", error)
+    return null
+  }
+}

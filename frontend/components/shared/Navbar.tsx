@@ -66,8 +66,8 @@ export function Navbar() {
           {/* Desktop Navigation Links with Animated Underline */}
           <div className="mt-1 hidden items-center gap-6 lg:flex">
             {navLinks.map((link) => {
-              // Check if the current pathname starts with the link href (handles sub-routes too)
-              const isActive = pathname.startsWith(link.href)
+              // Check if the current pathname is exactly the link href or a sub-route of it
+              const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`)
 
               return (
                 <Link
@@ -199,7 +199,7 @@ export function Navbar() {
 
             {/* Mobile Links with Active State */}
             {navLinks.map((link) => {
-              const isActive = pathname.startsWith(link.href)
+              const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`)
               return (
                 <Link
                   key={link.name}

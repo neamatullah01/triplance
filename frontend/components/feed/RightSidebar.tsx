@@ -128,7 +128,7 @@ export async function RightSidebar() {
                 key={suggestedUser.id}
                 className="group flex items-center justify-between gap-2"
               >
-                <div className="flex min-w-0 flex-1 items-center gap-3">
+                <Link href={`/explorers/${suggestedUser.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                   {/* Avatar */}
                   <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 shadow-sm dark:border-slate-700">
                     {suggestedUser.profileImage ? (
@@ -156,7 +156,7 @@ export async function RightSidebar() {
                           : "Explorer")}
                     </p>
                   </div>
-                </div>
+                </Link>
 
                 {/* Follow Button */}
                 <FollowButton

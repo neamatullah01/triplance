@@ -520,7 +520,10 @@ export function MainFeed() {
           {item.feedType === "PACKAGE" ? (
             <>
               <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <Link
+                  href={`/agency/${item.author?.id}`}
+                  className="flex items-center gap-3 transition-opacity hover:opacity-80"
+                >
                   <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-indigo-200 bg-indigo-900 font-bold text-white shadow-sm dark:border-slate-700">
                     {item.author?.profileImage ? (
                       <img
@@ -545,7 +548,7 @@ export function MainFeed() {
                       Agency Spotlight • Sponsored
                     </p>
                   </div>
-                </div>
+                </Link>
                 {item.author?.id && following.has(item.author.id) ? (
                   <Link href={`/agency/${item.author.id}`}>
                     <button className="cursor-pointer rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
@@ -587,7 +590,10 @@ export function MainFeed() {
           ) : (
             <>
               <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <Link
+                  href={`/${item.author?.role === "AGENCY" || item.author?.accountType === "AGENCY" ? "agency" : "explorers"}/${item.author?.id}`}
+                  className="flex items-center gap-3 transition-opacity hover:opacity-80"
+                >
                   <div className="h-10 w-10 overflow-hidden rounded-full border border-slate-100 bg-slate-200 dark:border-slate-700 dark:bg-slate-800">
                     {item.author?.profileImage ? (
                       <img
@@ -623,7 +629,7 @@ export function MainFeed() {
                       )}
                     </p>
                   </div>
-                </div>
+                </Link>
                 <button className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                   <MoreHorizontal className="h-5 w-5" />
                 </button>
