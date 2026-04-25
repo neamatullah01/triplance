@@ -188,3 +188,39 @@ export const deletePostAdmin = async (postId: string) => {
     return { success: false, message: "Failed to delete post" }
   }
 }
+
+export const getAllReviewsAdmin = async (query = "") => {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  try {
+    const res = await fetch(`${env.API_URL}/reviews${query}`, {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      next: { revalidate: 0 },
+    })
+    const result = await res.json()
+    return result.success ? { data: result.data, meta: result.meta } : { data: [], meta: null }
+  } catch (error) {
+    console.error("Error fetching admin reviews:", error)
+    return { data: [], meta: null }
+  }
+}
+
+export const deleteReviewAdmin = async (reviewId: string) => {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  try {
+    const res = await fetch(`${env.API_URL}/reviews/${reviewId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const result = await res.json()
+    if (result.success) {
+      revalidatePath("/admin-dashboard/reviews")
+    }
+    return result
+  } catch (error) {
+    console.error("Error deleting review:", error)
+    return { success: false, message: "Failed to delete review" }
+  }
+}

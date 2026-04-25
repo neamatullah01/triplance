@@ -120,7 +120,13 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Apply middleware to all routes EXCEPT api, next static files, and images
+    "/feed",
+    "/explorers/:path*",
+    "/explore/:path*",
+    "/bookings/:path*",
+    "/agency/:path*",
+    "/admin-dashboard/:path*",
+    "/agency-approval/:path*",
     "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 }

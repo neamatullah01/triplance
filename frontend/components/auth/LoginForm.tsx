@@ -93,7 +93,7 @@ export function LoginForm() {
 
       <div className="w-full max-w-[400px]">
         <h2 className="mb-6 text-xl font-bold text-slate-900">
-          Log in to Triplance
+          Welcome to Triplance
         </h2>
 
         {/* Root / Server Error Banner */}
