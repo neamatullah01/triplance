@@ -416,9 +416,6 @@ const getAllAgenciesForUser = async (authUser: JwtPayload, query: any) => {
     },
   };
 
-  // We notice from schema that Cover Image does not exist in schema.prisma, so remove it.
-  delete (selectFields as any).coverImage;
-
   if (skip < totalUnfollowed) {
     const unfollowedAgencies = await prisma.user.findMany({
       where: unfollowedWhere,
