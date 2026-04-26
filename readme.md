@@ -6,9 +6,9 @@ Triplance is a full-stack travel platform that combines **social networking** wi
 
 ## 🚩 The Problem
 
-Planning travel is fragmented. Travelers jump between social media for inspiration, separate websites to find packages, and third-party tools to make payments. There's no single platform where they can discover agencies, follow their content, book a trip, and leave a verified review — all in a trusted, moderated environment.
+Planning travel is fragmented. Travelers jump between social media for inspiration, separate websites to find packages, and third-party tools to make payments. There's no single platform where they can discover agencies, follow their content, book a trip, and leave a verified review all in a trusted, moderated environment.
 
-**Triplance solves this** by combining a social feed, a travel marketplace, and a secure booking + payment system into one cohesive platform.
+**Triplance solves this** by combining a social feed, a travel marketplace, and a secure booking + payment system into one unified platform.
 
 ---
 
