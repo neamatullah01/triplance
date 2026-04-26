@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PackageRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const package_validation_1 = require("./package.validation");
+const package_controller_1 = require("./package.controller");
+const review_controller_1 = require("../Review/review.controller");
+const router = express_1.default.Router();
+router.post('/', (0, auth_1.default)('AGENCY'), (0, validateRequest_1.default)(package_validation_1.PackageValidation.createPackageValidationSchema), package_controller_1.PackageController.createPackage);
+router.get('/', package_controller_1.PackageController.getAllPackages);
+router.get('/my-packages', (0, auth_1.default)('AGENCY'), package_controller_1.PackageController.getMyAgencyPackages);
+router.get('/:id', package_controller_1.PackageController.getPackageById);
+router.get('/:id/reviews', review_controller_1.ReviewController.getReviewsForPackage);
+router.patch('/:id', (0, auth_1.default)('AGENCY'), (0, validateRequest_1.default)(package_validation_1.PackageValidation.updatePackageValidationSchema), package_controller_1.PackageController.updatePackage);
+router.delete('/:id', (0, auth_1.default)('AGENCY', 'ADMIN'), package_controller_1.PackageController.deletePackage);
+exports.PackageRoutes = router;

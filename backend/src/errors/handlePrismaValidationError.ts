@@ -1,19 +1,19 @@
-import { Prisma } from '@prisma/client';
-import { TErrorSources, TGenericErrorResponse } from './error.interface';
+import { Prisma } from "../../generated/prisma/client";
+import { TErrorSources, TGenericErrorResponse } from "./error.interface";
 
 const handlePrismaValidationError = (
-  err: Prisma.PrismaClientValidationError
+  err: Prisma.PrismaClientValidationError,
 ): TGenericErrorResponse => {
   const errorSources: TErrorSources = [
     {
-      path: '',
+      path: "",
       message: err.message,
     },
   ];
 
   return {
     statusCode: 400,
-    message: 'Validation Error',
+    message: "Validation Error",
     errorSources,
   };
 };

@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BookingRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const booking_validation_1 = require("./booking.validation");
+const booking_controller_1 = require("./booking.controller");
+const router = express_1.default.Router();
+router.post('/', (0, auth_1.default)('TRAVELER'), (0, validateRequest_1.default)(booking_validation_1.BookingValidation.createBookingValidationSchema), booking_controller_1.BookingController.createBooking);
+router.get('/', (0, auth_1.default)('ADMIN'), booking_controller_1.BookingController.getAllBookings);
+router.get('/my', (0, auth_1.default)('TRAVELER'), booking_controller_1.BookingController.getMyBookings);
+router.get('/agency', (0, auth_1.default)('AGENCY'), booking_controller_1.BookingController.getAgencyBookings);
+router.get('/:id', (0, auth_1.default)('TRAVELER', 'AGENCY', 'ADMIN'), booking_controller_1.BookingController.getBookingById);
+router.patch('/:id/status', (0, auth_1.default)('AGENCY', 'ADMIN'), (0, validateRequest_1.default)(booking_validation_1.BookingValidation.updateBookingStatusValidationSchema), booking_controller_1.BookingController.updateBookingStatus);
+router.delete('/:id', (0, auth_1.default)('TRAVELER', 'ADMIN'), booking_controller_1.BookingController.cancelBooking);
+exports.BookingRoutes = router;
