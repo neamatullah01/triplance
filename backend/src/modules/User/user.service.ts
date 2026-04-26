@@ -320,6 +320,7 @@ const getSuggestedUsers = async (authUser: JwtPayload, query: any) => {
         id: true,
         name: true,
         profileImage: true,
+        coverImage: true,
         bio: true,
         role: true,
         isVerified: true,

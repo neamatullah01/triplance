@@ -22,8 +22,9 @@ const loginUser = (0, catchAsync_1.default)(async (req, res) => {
     const result = await auth_service_1.AuthService.loginUser(req.body);
     const { refreshToken, accessToken, user } = result;
     res.cookie('refreshToken', refreshToken, {
-        secure: config_1.default.port === 'production',
+        secure: config_1.default.env === 'production',
         httpOnly: true,
+        sameSite: config_1.default.env === 'production' ? 'none' : 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     (0, sendResponse_1.default)(res, {

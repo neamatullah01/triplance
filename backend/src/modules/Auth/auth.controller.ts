@@ -20,8 +20,9 @@ const loginUser = catchAsync(async (req, res) => {
   const { refreshToken, accessToken, user } = result;
 
   res.cookie('refreshToken', refreshToken, {
-    secure: config.port === 'production',
+    secure: config.env === 'production',
     httpOnly: true,
+    sameSite: config.env === 'production' ? 'none' : 'strict',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 

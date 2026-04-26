@@ -11,7 +11,7 @@ const app: Application = express();
 // parsers
 app.use(
   cors({
-    origin: "http://localhost:3000", // Your Next.js frontend URL
+    origin: [process.env.FRONTEND_URL as string, "http://localhost:3000"],
     credentials: true, // MUST be true to accept the HTTP-only cookie!
   }),
 );

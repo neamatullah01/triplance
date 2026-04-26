@@ -13,7 +13,10 @@ const payment_controller_1 = require("./modules/Payment/payment.controller");
 const app = (0, express_1.default)();
 // parsers
 app.use((0, cors_1.default)({
-    origin: "http://localhost:3000", // Your Next.js frontend URL
+    origin: [
+        "https://triplancefrontend-neamatullah01-neamatullah01s-projects.vercel.app",
+        "http://localhost:3000",
+    ],
     credentials: true, // MUST be true to accept the HTTP-only cookie!
 }));
 // app.use(express.json());
