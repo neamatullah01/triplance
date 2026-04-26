@@ -15,12 +15,20 @@ export default function PaymentSuccessPage() {
           Your booking is confirmed. The agency has been notified and you are
           ready for your trip.
         </p>
-        <Link
-          href="/"
-          className="block w-full rounded-xl bg-slate-900 py-3.5 font-bold text-white transition-colors hover:bg-slate-800"
-        >
-          Return to Home
-        </Link>
+        <div className="flex flex-col gap-3">
+          <Link
+            href="/bookings"
+            className="block w-full rounded-xl bg-indigo-600 py-3.5 font-bold text-white shadow-sm transition-colors hover:bg-indigo-700"
+          >
+            See your bookings
+          </Link>
+          <Link
+            href="/"
+            className="block w-full rounded-xl border-2 border-slate-200 bg-transparent py-3 font-bold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+          >
+            Return to Home
+          </Link>
+        </div>
       </div>
     </div>
   )

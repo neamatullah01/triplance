@@ -20,7 +20,8 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
-// ❌ REMOVED: import { cookies } from "next/headers"
+import { createBooking } from "@/services/booking.service"
+import { initiatePayment } from "@/services/payment.service"
 
 export function PackageDetailsClient({ pkg }: { pkg: any }) {
   const [selectedDate, setSelectedDate] = useState(
@@ -66,58 +67,17 @@ export function PackageDetailsClient({ pkg }: { pkg: any }) {
 
     try {
       // ---------------------------------------------------------
-      // STEP 1: Create the Booking in your database
+      // STEP 1: Create the Booking in your database via Server Action
       // ---------------------------------------------------------
-      const bookingRes = await fetch("http://localhost:5000/api/v1/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // ✅ THIS TELLS THE BROWSER TO ATTACH YOUR HTTP-ONLY COOKIES AUTOMATICALLY
-        credentials: "include",
-        body: JSON.stringify(payload),
-      })
-
-      console.log(bookingRes)
-
-      const bookingData = await bookingRes.json()
-
-      // Handle Backend Authentication Errors (e.g., if cookie is missing)
-      if (bookingRes.status === 401) {
-        throw new Error("You must be logged in to book a package.")
-      }
-
-      if (!bookingData.success) {
-        throw new Error(bookingData.message || "Failed to create booking")
-      }
-
+      const bookingData = await createBooking(payload)
       const bookingId = bookingData.data.id
 
       // ---------------------------------------------------------
-      // STEP 2: Initiate Stripe Checkout
+      // STEP 2: Initiate Stripe Checkout via Server Action
       // ---------------------------------------------------------
       toast.loading("Connecting to secure checkout...", { id: toastId })
 
-      const paymentRes = await fetch(
-        "http://localhost:5000/api/v1/payments/initiate",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // ✅ ATTACH COOKIES HERE AS WELL
-          credentials: "include",
-          body: JSON.stringify({ bookingId }),
-        }
-      )
-
-      const paymentData = await paymentRes.json()
-
-      if (!paymentData.success || !paymentData.data.paymentUrl) {
-        throw new Error(
-          paymentData.message || "Failed to initiate payment gateway"
-        )
-      }
+      const paymentData = await initiatePayment(bookingId)
 
       // ---------------------------------------------------------
       // STEP 3: Redirect the user to Stripe

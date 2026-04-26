@@ -15,6 +15,7 @@ interface Explorer {
   email: string;
   role: "TRAVELER" | "AGENCY";
   profileImage: string | null;
+  coverImage: string | null;
   bio: string | null;
   rating: number;
   isVerified: boolean;
@@ -256,8 +257,17 @@ export default function ExplorersPage() {
                     className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col block"
                   >
                     {/* Card Banner */}
-                    <div className="h-20 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-400 relative">
-                      <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=60')] bg-cover bg-center mix-blend-overlay" />
+                    <div 
+                      className={`h-20 relative ${!explorer.coverImage ? 'bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-400' : 'bg-slate-200 dark:bg-slate-800'}`}
+                    >
+                      {explorer.coverImage ? (
+                        <div 
+                          className="absolute inset-0 bg-cover bg-center" 
+                          style={{ backgroundImage: `url(${explorer.coverImage})` }} 
+                        />
+                      ) : (
+                        <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=60')] bg-cover bg-center mix-blend-overlay" />
+                      )}
                     </div>
 
                     {/* Avatar */}
@@ -296,11 +306,18 @@ export default function ExplorersPage() {
                         )}
                       </div>
 
-                      {explorer.bio && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 flex-1">
-                          {explorer.bio}
-                        </p>
-                      )}
+                      {/* Bio Section with flex-1 to push stats to bottom evenly */}
+                      <div className="flex-1 mb-3">
+                        {explorer.bio ? (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                            {explorer.bio}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-slate-400 dark:text-slate-500 italic opacity-70">
+                            No bio yet
+                          </p>
+                        )}
+                      </div>
 
                       {/* Stats Row */}
                       <div className="flex items-center gap-4 my-3 py-3 border-y border-slate-100 dark:border-slate-800">

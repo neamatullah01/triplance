@@ -15,7 +15,19 @@ export const loginUser = async (userData: FieldValues) => {
       body: JSON.stringify(userData),
       cache: "no-cache",
     })
-    const result = await res.json()
+
+    // If the response is not JSON (e.g. Vercel 500 HTML page), this will throw
+    let result
+    try {
+      result = await res.json()
+    } catch (parseError) {
+      console.error("Failed to parse login response:", parseError)
+      return {
+        success: false,
+        message: `Server error: Could not parse response from ${env.AUTH_URL}/login`,
+      }
+    }
+
     const { accessToken, refreshToken } = result?.data || {}
     const storeCookie = await cookies()
 
@@ -23,23 +35,30 @@ export const loginUser = async (userData: FieldValues) => {
       storeCookie.set({
         name: "token",
         value: accessToken,
-        //   httpOnly: true,
-        //   secure: env.NODE_ENV === "production",
-        //   sameSite: "none",
-        //   maxAge: 60 * 60 * 24 * 7,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60 * 24 * 7,
       })
-      //   storeCookie.set({
-      //       name: "refreshToken",
-      //       value: refreshToken,
-      //       httpOnly: true,
-      //       secure: env.NODE_ENV === "production",
-      //       sameSite: "none",
-      //       maxAge: 60 * 60 * 24 * 30,
-      //   });
+
+      if (refreshToken) {
+        storeCookie.set({
+          name: "refreshToken",
+          value: refreshToken,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 60 * 60 * 24 * 30,
+        })
+      }
     }
     return result
-  } catch (error) {
-    console.log(error)
+  } catch (error: any) {
+    console.error("Login fetch error:", error)
+    return {
+      success: false,
+      message: error.message || "Network error during login",
+    }
   }
 }
 
@@ -53,7 +72,18 @@ export const createUser = async (userData: FieldValues) => {
       body: JSON.stringify(userData),
       cache: "no-cache",
     })
-    const result = await res.json()
+
+    let result
+    try {
+      result = await res.json()
+    } catch (parseError) {
+      console.error("Failed to parse registration response:", parseError)
+      return {
+        success: false,
+        message: `Server error: Could not parse response from ${env.AUTH_URL}/register`,
+      }
+    }
+
     const { accessToken, refreshToken } = result?.data || {}
     const storeCookie = await cookies()
 
@@ -61,23 +91,30 @@ export const createUser = async (userData: FieldValues) => {
       storeCookie.set({
         name: "token",
         value: accessToken,
-        //   httpOnly: true,
-        //   secure: env.NODE_ENV === "production",
-        //   sameSite: "none",
-        //   maxAge: 60 * 60 * 24 * 7,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60 * 24 * 7,
       })
-      //   storeCookie.set({
-      //       name: "refreshToken",
-      //       value: refreshToken,
-      //       httpOnly: true,
-      //       secure: env.NODE_ENV === "production",
-      //       sameSite: "none",
-      //       maxAge: 60 * 60 * 24 * 30,
-      //   });
+
+      if (refreshToken) {
+        storeCookie.set({
+          name: "refreshToken",
+          value: refreshToken,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 60 * 60 * 24 * 30,
+        })
+      }
     }
     return result
-  } catch (error) {
-    console.log(error)
+  } catch (error: any) {
+    console.error("Registration fetch error:", error)
+    return {
+      success: false,
+      message: error.message || "Network error during registration",
+    }
   }
 }
 
@@ -162,6 +199,7 @@ export const updateUserProfile = async (userId: string, payload: any) => {
 export const logoutUser = async () => {
   const storeCookie = await cookies()
   storeCookie.delete("token")
+  storeCookie.delete("refreshToken")
 }
 
 export const getExplorerProfile = async (userId: string) => {

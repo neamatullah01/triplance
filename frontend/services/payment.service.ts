@@ -19,3 +19,23 @@ export const getAllPaymentsAdmin = async (query = "") => {
     return { data: [], meta: null }
   }
 }
+
+export const initiatePayment = async (bookingId: string) => {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+  
+  const response = await fetch(`${env.API_URL}/payments/initiate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ bookingId }),
+  })
+
+  const data = await response.json()
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || "Failed to initiate payment gateway")
+  }
+  return data
+}

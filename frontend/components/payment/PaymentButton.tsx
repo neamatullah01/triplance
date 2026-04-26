@@ -14,7 +14,7 @@ export default function PaymentButton({ bookingId }: { bookingId: string }) {
     try {
       // Call your backend proxy or backend directly
       const res = await fetch(
-        `http://localhost:5000/api/v1/payments/initiate`,
+        `https://triplancebackend.vercel.app/api/v1/payments/initiate`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

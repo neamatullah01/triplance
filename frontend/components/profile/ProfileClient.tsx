@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Trash2,
 } from "lucide-react"
 
 import { CreatePostModal } from "@/components/feed/CreatePostModal"
@@ -35,6 +36,7 @@ import { toast } from "sonner"
 
 import { likePost, unlikePost } from "@/services/like.service"
 import { getComments, addComment } from "@/services/comment.service"
+import { deletePost } from "@/services/post.service"
 
 // --- Animation Variants ---
 const containerVariants = {
@@ -86,6 +88,36 @@ export function ProfileClient({
     images: [],
     currentIndex: 0,
   })
+
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+
+  const confirmDeletePost = (postId: string) => {
+    setActiveDropdown(null)
+    toast("Delete this post?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          const toastId = toast.loading("Deleting post...")
+          try {
+            const res = await deletePost(postId, localUser.id)
+            if (res?.success) {
+              setPosts((prev) => prev.filter((p) => p.id !== postId))
+              toast.success("Post deleted successfully", { id: toastId })
+            } else {
+              toast.error(res?.message || "Failed to delete post", { id: toastId })
+            }
+          } catch (error) {
+            toast.error("An error occurred while deleting", { id: toastId })
+          }
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => console.log("Cancelled delete"),
+      },
+    })
+  }
 
   // Initialize posts and likes
   useEffect(() => {
@@ -612,9 +644,33 @@ export function ProfileClient({
                               </p>
                             </div>
                           </div>
-                          <button className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                            <MoreHorizontal className="h-5 w-5" />
-                          </button>
+                          <div className="relative">
+                            <button
+                              onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
+                              className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {activeDropdown === item.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  transition={{ duration: 0.1 }}
+                                  className="absolute right-0 top-full mt-2 w-40 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-lg z-50 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                  <button
+                                    onClick={() => confirmDeletePost(item.id)}
+                                    className="flex w-full cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-rose-600 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete Post
+                                  </button>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </div>
 
                         <p className="mb-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-300">

@@ -51,3 +51,27 @@ export async function getAgencyBookings(params: Record<string, any>) {
 
   return data
 }
+
+export async function createBooking(payload: any) {
+  const storeCookie = await cookies()
+  const token = storeCookie.get("token")?.value
+
+  const response = await fetch(`${env.API_URL}/bookings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const data = await response.json()
+  if (response.status === 401) {
+    throw new Error("You must be logged in to book a package.")
+  }
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || "Failed to create booking")
+  }
+
+  return data
+}

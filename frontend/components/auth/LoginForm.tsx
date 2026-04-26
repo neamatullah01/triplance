@@ -53,7 +53,8 @@ export function LoginForm() {
       const userRole = result.data?.user?.role
       const redirectPath = await getRedirectPathByRole(userRole)
 
-      router.push(redirectPath)
+      window.location.href = redirectPath || "/"
+      // router.push(redirectPath)
       router.refresh()
     } catch {
       const fallbackError = "Something went wrong. Please try again."
