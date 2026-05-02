@@ -28,11 +28,51 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   })
+
+  const demoAccounts = [
+    {
+      label: "Traveler",
+      email: "traveler@test.com",
+      password: "password123",
+      color: "indigo",
+    },
+    {
+      label: "Agency",
+      email: "agency@test.com",
+      password: "password123",
+      color: "amber",
+    },
+    {
+      label: "Admin",
+      email: "admin@gmail.com",
+      password: "admin123",
+      color: "rose",
+    },
+  ] as const
+
+  const handleDemoLogin = async (email: string, password: string) => {
+    setValue("email", email, { shouldValidate: true })
+    setValue("password", password, { shouldValidate: true })
+    const toastId = toast.loading("Signing in as demo user...")
+    try {
+      const result = await loginUser({ email, password })
+      if (!result?.success) {
+        toast.error(result?.message || "Demo login failed.", { id: toastId })
+        return
+      }
+      toast.success("Demo login successful!", { id: toastId })
+      const redirectPath = await getRedirectPathByRole(result.data?.user?.role)
+      window.location.href = redirectPath || "/"
+    } catch {
+      toast.error("Something went wrong.", { id: toastId })
+    }
+  }
 
   const onSubmit = async (data: LoginFormValues) => {
     const toastId = toast.loading("Signing in...")
@@ -201,18 +241,55 @@ export function LoginForm() {
           </button>
         </form>
 
-        <div className="mt-4 mb-6 text-center">
-          <Link
-            href="/forgot-password"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
-          >
-            Forgotten password?
-          </Link>
+        {/* ── Demo Login ── */}
+        <div className="mt-6">
+          <div className="mb-3 flex items-center gap-3">
+            <hr className="flex-1 border-slate-200" />
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+              Demo Login
+            </span>
+            <hr className="flex-1 border-slate-200" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {demoAccounts.map(({ label, email, password, color }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => handleDemoLogin(email, password)}
+                className={`group relative flex cursor-pointer flex-col items-center gap-0.5 rounded-xl border px-2 py-2.5 text-center transition-all hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 ${
+                  color === "indigo"
+                    ? "border-indigo-200 bg-indigo-50 hover:border-indigo-400 hover:bg-indigo-100"
+                    : color === "amber"
+                      ? "border-amber-200 bg-amber-50 hover:border-amber-400 hover:bg-amber-100"
+                      : "border-rose-200 bg-rose-50 hover:border-rose-400 hover:bg-rose-100"
+                }`}
+              >
+                <span
+                  className={`text-[11px] font-bold tracking-widest uppercase ${
+                    color === "indigo"
+                      ? "text-indigo-600"
+                      : color === "amber"
+                        ? "text-amber-600"
+                        : "text-rose-600"
+                  }`}
+                >
+                  {label}
+                </span>
+                <span className="mt-0.5 truncate text-[10px] text-slate-400">
+                  {email}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <p className="mt-2.5 text-center text-[10px] text-slate-400">
+            Click any role to instantly log in with demo credentials.
+          </p>
         </div>
 
-        <hr className="mb-6 border-slate-200" />
-
-        <div className="mb-6 flex justify-center">
+        <div className="mt-6 flex justify-center">
           <Link href="/register" className="w-full">
             <button className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white py-3 font-bold text-slate-900 transition-colors hover:bg-slate-50">
               Create new account

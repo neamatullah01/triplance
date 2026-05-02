@@ -22,7 +22,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal
+  MoreHorizontal,
 } from "lucide-react"
 import { FollowButton } from "@/components/shared/FollowButton"
 import { likePost, unlikePost } from "@/services/like.service"
@@ -66,12 +66,20 @@ export function ExplorerProfileClient({
 
   // Post Interaction State
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
-  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({})
+  const [expandedComments, setExpandedComments] = useState<
+    Record<string, boolean>
+  >({})
   const [commentsData, setCommentsData] = useState<Record<string, any[]>>({})
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
-  const [isSubmittingComment, setIsSubmittingComment] = useState<Record<string, boolean>>({})
-  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({})
-  const [replyTargets, setReplyTargets] = useState<Record<string, { id: string; name: string } | null>>({})
+  const [isSubmittingComment, setIsSubmittingComment] = useState<
+    Record<string, boolean>
+  >({})
+  const [loadingComments, setLoadingComments] = useState<
+    Record<string, boolean>
+  >({})
+  const [replyTargets, setReplyTargets] = useState<
+    Record<string, { id: string; name: string } | null>
+  >({})
 
   const [lightbox, setLightbox] = useState<{
     isOpen: boolean
@@ -84,15 +92,26 @@ export function ExplorerProfileClient({
   })
 
   useEffect(() => {
-    // Initialize liked posts
+    // Initialize liked posts by checking if the current user explicitly liked them
     const initialLikes = new Set<string>()
     posts.forEach((post) => {
-      if (post.isLiked || (post.likes && post.likes.length > 0)) {
+      // Check if backend flagged it as liked, OR if the current user's ID is in the likes array
+      const hasUserLiked =
+        post.isLiked === true ||
+        (Array.isArray(post.likes) &&
+          post.likes.some(
+            (like: any) =>
+              like === currentUserId ||
+              like.userId === currentUserId ||
+              like.id === currentUserId
+          ))
+
+      if (hasUserLiked) {
         initialLikes.add(post.id)
       }
     })
     setLikedPosts(initialLikes)
-  }, [explorer.posts])
+  }, [explorer.posts, currentUserId])
 
   const formatTime = (dateString: string) => {
     if (!dateString) return "Just now"
@@ -103,13 +122,15 @@ export function ExplorerProfileClient({
     if (diffInSeconds < 60) return "Just now"
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
+    if (diffInSeconds < 604800)
+      return `${Math.floor(diffInSeconds / 86400)}d ago`
     return date.toLocaleDateString()
   }
 
   const handleToggleLike = async (postId: string) => {
     const isLiked = likedPosts.has(postId)
 
+    // Optimistic Update: Instantly change the UI
     setLikedPosts((prev) => {
       const next = new Set(prev)
       if (isLiked) next.delete(postId)
@@ -134,10 +155,19 @@ export function ExplorerProfileClient({
     )
 
     try {
+      // Call the appropriate API endpoint based on the accurate state
       const res = isLiked ? await unlikePost(postId) : await likePost(postId)
-      if (!res?.success) throw new Error(res?.message || "Failed to like post")
+
+      if (!res?.success) {
+        // If the backend says "already liked" during a like attempt, gracefully suppress it and keep the heart filled
+        if (res?.message?.toLowerCase().includes("already liked")) {
+          return
+        }
+        throw new Error(res?.message || "Failed to toggle like")
+      }
     } catch (error: any) {
       toast.error(error.message)
+      // Revert optimistic update on failure
       setLikedPosts((prev) => {
         const next = new Set(prev)
         if (isLiked) next.add(postId)
@@ -195,7 +225,8 @@ export function ExplorerProfileClient({
     try {
       const res = await addComment(postId, text, parentId)
 
-      if (!res?.success) throw new Error(res?.message || "Failed to post comment")
+      if (!res?.success)
+        throw new Error(res?.message || "Failed to post comment")
 
       toast.success("Comment added", { id: toastId })
       setCommentInputs((prev) => ({ ...prev, [postId]: "" }))
@@ -344,7 +375,7 @@ export function ExplorerProfileClient({
     <div className="min-h-screen bg-slate-50 pb-20 dark:bg-slate-950">
       {/* Back nav */}
       <div className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto max-w-2xl lg:max-w-5xl px-4 py-3 sm:px-6">
+        <div className="mx-auto max-w-2xl px-4 py-3 sm:px-6 lg:max-w-5xl">
           <Link
             href="/explorers"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
@@ -405,7 +436,9 @@ export function ExplorerProfileClient({
                     initialIsFollowing={initialIsFollowing}
                     variant="standard"
                     onFollowChange={(isNow) =>
-                      setFollowerCount((c) => (isNow ? c + 1 : Math.max(0, c - 1)))
+                      setFollowerCount((c) =>
+                        isNow ? c + 1 : Math.max(0, c - 1)
+                      )
                     }
                   />
                 </div>
@@ -423,7 +456,7 @@ export function ExplorerProfileClient({
 
               <div className="mt-2 flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide ${
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide uppercase ${
                     explorer.role === "AGENCY"
                       ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                       : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
@@ -504,7 +537,9 @@ export function ExplorerProfileClient({
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-slate-200 font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          {explorer.name ? explorer.name.substring(0, 1).toUpperCase() : "U"}
+                          {explorer.name
+                            ? explorer.name.substring(0, 1).toUpperCase()
+                            : "U"}
                         </div>
                       )}
                     </div>
@@ -521,7 +556,8 @@ export function ExplorerProfileClient({
                         {formatTime(post.createdAt)}
                         {post.location && (
                           <>
-                            <MapPin className="ml-1 inline h-3 w-3" /> {post.location}
+                            <MapPin className="ml-1 inline h-3 w-3" />{" "}
+                            {post.location}
                           </>
                         )}
                       </p>
@@ -558,7 +594,9 @@ export function ExplorerProfileClient({
                     >
                       <MessageCircle
                         className="h-5 w-5 transition-transform group-hover:scale-110"
-                        fill={expandedComments[post.id] ? "currentColor" : "none"}
+                        fill={
+                          expandedComments[post.id] ? "currentColor" : "none"
+                        }
                       />
                       <span className="text-sm font-medium">
                         {post._count?.comments || 0}
@@ -592,19 +630,30 @@ export function ExplorerProfileClient({
                           </p>
                         ) : (
                           <div className="custom-scrollbar flex max-h-60 flex-col gap-3 overflow-y-auto pr-2">
-                            {(commentsData[post.id]?.filter((c) => !c.parentId) || []).map((rootComment: any) => (
-                              <div key={rootComment.id} className="flex flex-col gap-2">
+                            {(
+                              commentsData[post.id]?.filter(
+                                (c) => !c.parentId
+                              ) || []
+                            ).map((rootComment: any) => (
+                              <div
+                                key={rootComment.id}
+                                className="flex flex-col gap-2"
+                              >
                                 <div className="flex gap-2.5 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/50">
                                   <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
                                     {rootComment.user?.profileImage ? (
                                       <img
                                         src={rootComment.user.profileImage}
-                                        alt={rootComment.user.name || "User Avatar"}
+                                        alt={
+                                          rootComment.user.name || "User Avatar"
+                                        }
                                         className="h-full w-full object-cover"
                                       />
                                     ) : (
                                       <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                                        {rootComment.user?.name?.charAt(0).toUpperCase() || "U"}
+                                        {rootComment.user?.name
+                                          ?.charAt(0)
+                                          .toUpperCase() || "U"}
                                       </span>
                                     )}
                                   </div>
@@ -618,7 +667,9 @@ export function ExplorerProfileClient({
                                       </span>
                                     </div>
                                     <p className="mt-0.5 text-xs break-words text-slate-600 dark:text-slate-300">
-                                      {rootComment.text || rootComment.content || rootComment.textcontent}
+                                      {rootComment.text ||
+                                        rootComment.content ||
+                                        rootComment.textcontent}
                                     </p>
                                     <div className="mt-1.5 flex items-center gap-3 pt-0.5">
                                       <button
@@ -627,7 +678,9 @@ export function ExplorerProfileClient({
                                             ...prev,
                                             [post.id]: {
                                               id: rootComment.id,
-                                              name: rootComment.user?.name || "User",
+                                              name:
+                                                rootComment.user?.name ||
+                                                "User",
                                             },
                                           }))
                                         }
@@ -639,8 +692,15 @@ export function ExplorerProfileClient({
                                   </div>
                                 </div>
 
-                                {(commentsData[post.id]?.filter((child) => child.parentId === rootComment.id) || []).map((reply: any) => (
-                                  <div key={reply.id} className="relative flex gap-2.5 py-1 pr-2 pl-10">
+                                {(
+                                  commentsData[post.id]?.filter(
+                                    (child) => child.parentId === rootComment.id
+                                  ) || []
+                                ).map((reply: any) => (
+                                  <div
+                                    key={reply.id}
+                                    className="relative flex gap-2.5 py-1 pr-2 pl-10"
+                                  >
                                     <div className="absolute top-0 bottom-4 left-6 w-px bg-slate-200 dark:bg-slate-700"></div>
                                     <div className="absolute bottom-4 left-6 h-px w-3 bg-slate-200 dark:bg-slate-700"></div>
                                     <div className="z-10 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
@@ -652,7 +712,9 @@ export function ExplorerProfileClient({
                                         />
                                       ) : (
                                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                                          {reply.user?.name?.charAt(0).toUpperCase() || "U"}
+                                          {reply.user?.name
+                                            ?.charAt(0)
+                                            .toUpperCase() || "U"}
                                         </span>
                                       )}
                                     </div>
@@ -666,7 +728,9 @@ export function ExplorerProfileClient({
                                         </span>
                                       </div>
                                       <p className="mt-0.5 text-xs break-words text-slate-600 dark:text-slate-300">
-                                        {reply.text || reply.content || reply.textcontent}
+                                        {reply.text ||
+                                          reply.content ||
+                                          reply.textcontent}
                                       </p>
                                       <div className="mt-1.5 flex items-center gap-3 pt-0.5">
                                         <button
@@ -675,7 +739,8 @@ export function ExplorerProfileClient({
                                               ...prev,
                                               [post.id]: {
                                                 id: rootComment.id,
-                                                name: reply.user?.name || "User",
+                                                name:
+                                                  reply.user?.name || "User",
                                               },
                                             }))
                                           }
@@ -696,7 +761,8 @@ export function ExplorerProfileClient({
                           {replyTargets[post.id] && (
                             <div className="flex items-center justify-between rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5 dark:border-indigo-800 dark:bg-indigo-900/30">
                               <span className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">
-                                Replying to <b>@{replyTargets[post.id]?.name}</b>
+                                Replying to{" "}
+                                <b>@{replyTargets[post.id]?.name}</b>
                               </span>
                               <button
                                 onClick={() =>
@@ -715,7 +781,9 @@ export function ExplorerProfileClient({
                             <input
                               type="text"
                               placeholder={
-                                replyTargets[post.id] ? `Write a reply...` : `Write a comment...`
+                                replyTargets[post.id]
+                                  ? `Write a reply...`
+                                  : `Write a comment...`
                               }
                               value={commentInputs[post.id] || ""}
                               onChange={(e) =>
@@ -732,7 +800,10 @@ export function ExplorerProfileClient({
                             />
                             <button
                               onClick={() => handlePostComment(post.id)}
-                              disabled={!commentInputs[post.id]?.trim() || isSubmittingComment[post.id]}
+                              disabled={
+                                !commentInputs[post.id]?.trim() ||
+                                isSubmittingComment[post.id]
+                              }
                               className="shrink-0 cursor-pointer rounded-full bg-indigo-600 p-2.5 text-white transition-colors hover:bg-indigo-700 disabled:opacity-50 disabled:grayscale"
                             >
                               {isSubmittingComment[post.id] ? (
@@ -798,7 +869,8 @@ export function ExplorerProfileClient({
                   setLightbox({
                     ...lightbox,
                     currentIndex:
-                      (lightbox.currentIndex - 1 + lightbox.images.length) % lightbox.images.length,
+                      (lightbox.currentIndex - 1 + lightbox.images.length) %
+                      lightbox.images.length,
                   })
                 }}
                 className="absolute left-4 z-10 cursor-pointer rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
@@ -825,7 +897,8 @@ export function ExplorerProfileClient({
                   e.stopPropagation()
                   setLightbox({
                     ...lightbox,
-                    currentIndex: (lightbox.currentIndex + 1) % lightbox.images.length,
+                    currentIndex:
+                      (lightbox.currentIndex + 1) % lightbox.images.length,
                   })
                 }}
                 className="absolute right-4 z-10 cursor-pointer rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20"

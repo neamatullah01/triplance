@@ -22,8 +22,8 @@ export function MobileBottomNav() {
   const inactiveClass = "text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
 
   return (
-    <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-slate-200 bg-white/90 px-6 py-3 backdrop-blur-lg sm:hidden dark:border-slate-800 dark:bg-slate-950/90">
-      <div className="pb-safe flex items-center justify-between">
+    <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-slate-200 bg-white/90 px-6 py-3 backdrop-blur-lg lg:hidden dark:border-slate-800 dark:bg-slate-950/90">
+      <div className="pb-safe mx-auto flex w-full max-w-md items-center justify-between sm:max-w-lg">
         <Link
           href="/"
           className={`flex flex-col items-center gap-1 transition-colors ${isFeed ? activeClass : inactiveClass}`}

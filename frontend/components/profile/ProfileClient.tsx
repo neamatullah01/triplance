@@ -420,7 +420,7 @@ export function ProfileClient({
           </div>
 
           <div className="relative px-4 pb-8 sm:px-8">
-            <div className="relative z-10 -mt-16 mb-4 flex items-end justify-between md:-mt-20">
+            <div className="relative z-10 -mt-16 mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between md:-mt-20">
               <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md md:h-40 md:w-40 md:border-8 dark:border-slate-900 dark:bg-slate-800">
                 {localUser?.profileImage ? (
                   <img
@@ -435,17 +435,17 @@ export function ProfileClient({
                 )}
               </div>
 
-              <div className="mb-2 flex gap-3 md:mb-6">
+              <div className="mt-4 flex w-full gap-2 sm:mt-0 sm:mb-2 sm:w-auto sm:gap-3 md:mb-6">
                 <CreatePostModal
                   customTrigger={
-                    <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-colors hover:bg-indigo-700">
+                    <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-colors hover:bg-indigo-700 sm:flex-none sm:px-5">
                       <Plus className="h-4 w-4" /> Create Post
                     </button>
                   }
                 />
                 <button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="flex cursor-pointer items-center gap-2 rounded-xl bg-slate-100 px-5 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 sm:flex-none sm:px-5"
                 >
                   <Edit3 className="h-4 w-4" /> Edit Profile
                 </button>
@@ -686,7 +686,7 @@ export function ProfileClient({
                     <div
                       className={`mt-4 flex items-center justify-between pt-3 ${item.feedType === "PACKAGE" ? "border-t border-slate-100 dark:border-slate-800/50" : ""}`}
                     >
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-4 sm:gap-6">
                         <button
                           onClick={() => handleToggleLike(item.id)}
                           className={`group flex cursor-pointer items-center gap-2 transition-colors ${likedPosts.has(item.id) ? "text-rose-600" : "text-slate-500 hover:text-rose-600"}`}

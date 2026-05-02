@@ -23,8 +23,6 @@ export default async function AgencyPage({
   const response = await allAgencyForUser(searchQuery, currentPage, limit)
   const fetchedAgencies = response?.data || []
   const fetchedMeta = response?.meta || { page: currentPage, limit, total: 0 }
-
-  console.log(fetchedAgencies)
   // Map to the format expected by AgencyListClient
   const mappedAgencies = fetchedAgencies.map((agency: any) => ({
     id: agency.id,
