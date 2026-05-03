@@ -10,6 +10,8 @@ import { auth } from "./lib/auth";
 
 const app: Application = express();
 
+app.set("trust proxy", 1);
+
 // parsers
 app.use(
   cors({
@@ -31,7 +33,9 @@ app.post(
 );
 
 // Better Auth
-app.all("/api/auth/*", toNodeHandler(auth));
+
+// Better Auth - MUST BE BEFORE express.json()
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));

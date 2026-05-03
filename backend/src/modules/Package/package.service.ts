@@ -324,7 +324,7 @@ const updatePackage = async (
         payload.itinerary !== undefined
           ? payload.itinerary
           : existingPackage.itinerary,
-      images: [imageUrl],
+      images: imageUrl ? [imageUrl] : [],
     },
   });
 
