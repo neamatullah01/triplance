@@ -4,7 +4,10 @@ import { env } from "@/lib/env";
 
 export async function GET(req: NextRequest) {
   const storeCookie = await cookies();
-  const token = storeCookie.get("token")?.value;
+  const token =
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value;
 
   const { searchParams } = req.nextUrl;
   const searchTerm = searchParams.get("searchTerm") || "";

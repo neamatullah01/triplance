@@ -4,10 +4,18 @@ import { env } from "@/lib/env"
 import { revalidateTag } from "next/cache"
 import { cookies } from "next/headers"
 
+const getToken = async () => {
+  const storeCookie = await cookies()
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  )
+}
+
 export const createPost = async (postData: any) => {
   try {
-    const storeCookie = await cookies()
-    const token = storeCookie.get("token")?.value
+    const token = await getToken()
 
     const res = await fetch(`${env.API_URL}/posts`, {
       method: "POST",
@@ -33,8 +41,7 @@ export const createPost = async (postData: any) => {
 
 export const getFeedPost = async (page: number = 1, limit: number = 10) => {
   try {
-    const storeCookie = await cookies()
-    const token = storeCookie.get("token")?.value
+    const token = await getToken()
 
     const res = await fetch(
       `${env.API_URL}/posts/feed?page=${page}&limit=${limit}`,
@@ -44,7 +51,7 @@ export const getFeedPost = async (page: number = 1, limit: number = 10) => {
           Authorization: `Bearer ${token}`,
         },
         next: { tags: ["feed"] },
-        cache: "no-store", // Or adjust caching strategy based on preference
+        cache: "no-store",
       }
     )
 
@@ -58,8 +65,7 @@ export const getFeedPost = async (page: number = 1, limit: number = 10) => {
 
 export const getMyPosts = async () => {
   try {
-    const storeCookie = await cookies()
-    const token = storeCookie.get("token")?.value
+    const token = await getToken()
 
     const res = await fetch(`${env.API_URL}/posts/my`, {
       method: "GET",
@@ -77,8 +83,7 @@ export const getMyPosts = async () => {
 
 export const deletePost = async (postId: string, authorId?: string) => {
   try {
-    const storeCookie = await cookies()
-    const token = storeCookie.get("token")?.value
+    const token = await getToken()
 
     const res = await fetch(`${env.API_URL}/posts/${postId}`, {
       method: "DELETE",

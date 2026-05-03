@@ -3,9 +3,17 @@
 import { cookies } from "next/headers"
 import { env } from "@/lib/env"
 
-export const getAllPaymentsAdmin = async (query = "") => {
+const getToken = async () => {
   const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  )
+}
+
+export const getAllPaymentsAdmin = async (query = "") => {
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/payments${query}`, {
       method: "GET",
@@ -21,9 +29,8 @@ export const getAllPaymentsAdmin = async (query = "") => {
 }
 
 export const initiatePayment = async (bookingId: string) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
-  
+  const token = await getToken()
+
   const response = await fetch(`${env.API_URL}/payments/initiate`, {
     method: "POST",
     headers: {

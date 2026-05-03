@@ -13,9 +13,28 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb',
+      bodySizeLimit: "10mb",
     },
   },
-};
+  // async rewrites() {
+  //   return [
+  //     {
+  //       source: "/api/auth/:path*",
+  //       destination: "https://triplancebackend.vercel.app/api/auth/:path*",
+  //     },
+  //   ]
+  // },
+  async rewrites() {
+    const backendBaseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL || "https://triplancebackend.vercel.app"
+
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendBaseUrl}/api/:path*`,
+      },
+    ]
+  },
+}
 
 export default nextConfig

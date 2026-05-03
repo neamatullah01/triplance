@@ -4,9 +4,17 @@ import { cookies } from "next/headers"
 import { env } from "@/lib/env"
 import { revalidatePath, revalidateTag } from "next/cache"
 
-export const getAdminStats = async () => {
+const getToken = async () => {
   const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  )
+}
+
+export const getAdminStats = async () => {
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/admin/stats`, {
       method: "GET",
@@ -22,8 +30,7 @@ export const getAdminStats = async () => {
 }
 
 export const getPendingAgencies = async () => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(
       `${env.API_URL}/users?role=agency&isVerified=false`,
@@ -42,8 +49,7 @@ export const getPendingAgencies = async () => {
 }
 
 export const approveAgency = async (agencyId: string) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/users/${agencyId}/approve`, {
       method: "PATCH",
@@ -68,10 +74,8 @@ export const approveAgency = async (agencyId: string) => {
 }
 
 export const rejectAgency = async (agencyId: string) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
-    // According to PRD, we can DELETE a user. Admin can delete an unverified agency.
     const res = await fetch(`${env.API_URL}/users/${agencyId}`, {
       method: "DELETE",
       headers: {
@@ -95,8 +99,7 @@ export const rejectAgency = async (agencyId: string) => {
 }
 
 export const getAllBookingsAdmin = async (query = "") => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/bookings${query}`, {
       method: "GET",
@@ -112,8 +115,7 @@ export const getAllBookingsAdmin = async (query = "") => {
 }
 
 export const getAllUsersAdmin = async (query = "") => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/users${query}`, {
       method: "GET",
@@ -129,8 +131,7 @@ export const getAllUsersAdmin = async (query = "") => {
 }
 
 export const banUser = async (userId: string) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/users/${userId}/ban`, {
       method: "PATCH",
@@ -154,8 +155,7 @@ export const banUser = async (userId: string) => {
 }
 
 export const getAllPostsAdmin = async (query = "") => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/posts${query}`, {
       method: "GET",
@@ -171,8 +171,7 @@ export const getAllPostsAdmin = async (query = "") => {
 }
 
 export const deletePostAdmin = async (postId: string) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/posts/${postId}`, {
       method: "DELETE",
@@ -190,8 +189,7 @@ export const deletePostAdmin = async (postId: string) => {
 }
 
 export const getAllReviewsAdmin = async (query = "") => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/reviews${query}`, {
       method: "GET",
@@ -207,8 +205,7 @@ export const getAllReviewsAdmin = async (query = "") => {
 }
 
 export const deleteReviewAdmin = async (reviewId: string) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/reviews/${reviewId}`, {
       method: "DELETE",

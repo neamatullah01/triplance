@@ -1,8 +1,16 @@
 "use server"
 
 import { cookies } from "next/headers"
-
 import { env } from "@/lib/env"
+
+const getToken = async () => {
+  const storeCookie = await cookies()
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  )
+}
 
 export const getPackages = async (
   page: number = 1,
@@ -64,8 +72,7 @@ export interface AgencyPackageQuery {
 }
 
 export const getMyAgencyPackages = async (query: AgencyPackageQuery = {}) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   try {
     const params = new URLSearchParams()
@@ -100,8 +107,7 @@ export const getMyAgencyPackages = async (query: AgencyPackageQuery = {}) => {
 }
 
 export async function createPackage(payload: any) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   const response = await fetch(`${env.API_URL}/packages`, {
     method: "POST",
@@ -122,8 +128,7 @@ export async function createPackage(payload: any) {
 }
 
 export async function updatePackage(packageId: string, payload: any) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   const response = await fetch(`${env.API_URL}/packages/${packageId}`, {
     method: "PATCH",
     headers: {
@@ -139,8 +144,7 @@ export async function updatePackage(packageId: string, payload: any) {
 }
 
 export async function deletePackage(packageId: string) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   const response = await fetch(`${env.API_URL}/packages/${packageId}`, {
     method: "DELETE",

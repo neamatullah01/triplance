@@ -5,6 +5,15 @@ import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { jwtDecode } from "jwt-decode";
 
+const getToken = async () => {
+  const storeCookie = await cookies();
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  );
+};
+
 /**
  * Follow a user by their ID.
  * POST /api/v1/users/:id/follow
@@ -12,7 +21,7 @@ import { jwtDecode } from "jwt-decode";
 export const followUser = async (targetUserId: string) => {
   try {
     const storeCookie = await cookies();
-    const token = storeCookie.get("token")?.value;
+    const token = await getToken();
 
     const res = await fetch(`${env.API_URL}/users/${targetUserId}/follow`, {
       method: "POST",
@@ -25,10 +34,15 @@ export const followUser = async (targetUserId: string) => {
     const result = await res.json();
 
     if (result.success) {
-      // Revalidate both users' cached profile data (follower/following counts)
-      const decoded: any = token ? jwtDecode(token) : null;
-      if (decoded?.userId) revalidateTag(`user-${decoded.userId}`, 'max');
-      revalidateTag(`user-${targetUserId}`, 'max');
+      // Try to get userId for cache revalidation – only possible with JWT
+      const jwtToken = storeCookie.get("token")?.value;
+      if (jwtToken) {
+        try {
+          const decoded: any = jwtDecode(jwtToken);
+          if (decoded?.userId) revalidateTag(`user-${decoded.userId}`, "max");
+        } catch {}
+      }
+      revalidateTag(`user-${targetUserId}`, "max");
     }
 
     return result;
@@ -45,7 +59,7 @@ export const followUser = async (targetUserId: string) => {
 export const unfollowUser = async (targetUserId: string) => {
   try {
     const storeCookie = await cookies();
-    const token = storeCookie.get("token")?.value;
+    const token = await getToken();
 
     const res = await fetch(`${env.API_URL}/users/${targetUserId}/follow`, {
       method: "DELETE",
@@ -57,10 +71,14 @@ export const unfollowUser = async (targetUserId: string) => {
     const result = await res.json();
 
     if (result.success) {
-      // Revalidate both users' cached profile data (follower/following counts)
-      const decoded: any = token ? jwtDecode(token) : null;
-      if (decoded?.userId) revalidateTag(`user-${decoded.userId}`, 'max');
-      revalidateTag(`user-${targetUserId}`, 'max');
+      const jwtToken = storeCookie.get("token")?.value;
+      if (jwtToken) {
+        try {
+          const decoded: any = jwtDecode(jwtToken);
+          if (decoded?.userId) revalidateTag(`user-${decoded.userId}`, "max");
+        } catch {}
+      }
+      revalidateTag(`user-${targetUserId}`, "max");
     }
 
     return result;
@@ -76,8 +94,7 @@ export const unfollowUser = async (targetUserId: string) => {
  */
 export const getFollowers = async (userId: string) => {
   try {
-    const storeCookie = await cookies();
-    const token = storeCookie.get("token")?.value;
+    const token = await getToken();
 
     const res = await fetch(`${env.API_URL}/users/${userId}/followers`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -98,8 +115,7 @@ export const getFollowers = async (userId: string) => {
  */
 export const getFollowing = async (userId: string) => {
   try {
-    const storeCookie = await cookies();
-    const token = storeCookie.get("token")?.value;
+    const token = await getToken();
 
     const res = await fetch(`${env.API_URL}/users/${userId}/following`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},

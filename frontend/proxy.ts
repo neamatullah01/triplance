@@ -12,8 +12,9 @@ export async function proxy(request: NextRequest) {
   // Check for the token (checking both common names)
   const token =
     request.cookies.get("accessToken")?.value ||
-    request.cookies.get("token")?.value
-
+    request.cookies.get("token")?.value ||
+    request.cookies.get("better-auth.session_token")?.value || // Localhost Better Auth
+    request.cookies.get("__Secure-better-auth.session_token")?.value
   let userRole = null
   let isVerified = false
 

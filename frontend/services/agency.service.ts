@@ -3,14 +3,21 @@
 import { env } from "@/lib/env"
 import { cookies } from "next/headers"
 
-export const getAgencyById = async (id: string) => {
+const getToken = async () => {
   const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  )
+}
+
+export const getAgencyById = async (id: string) => {
+  const token = await getToken()
   try {
     const res = await fetch(`${env.API_URL}/users/${id}`, {
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-      // Tag this specific agency so we can revalidate it later when they add a post/package
       next: { tags: [`user-${id}`] },
       cache: "no-store",
     })
@@ -31,8 +38,7 @@ export const allAgencyForUser = async (
   page: number = 1,
   limit: number = 20
 ) => {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   try {
     const queryParams = new URLSearchParams({
       page: page.toString(),
@@ -59,8 +65,7 @@ export const allAgencyForUser = async (
 }
 
 export async function getAgencyStats() {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   const res = await fetch(`${env.API_URL}/agency/dashboard/stats`, {
     headers: { Authorization: `Bearer ${token}` },

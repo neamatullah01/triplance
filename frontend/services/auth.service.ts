@@ -120,37 +120,83 @@ export const createUser = async (userData: FieldValues) => {
 
 export const getUser = async () => {
   const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
-  let decodedData: any = null
-  if (token) {
-    decodedData = await jwtDecode(token)
+
+  // ── 1. Standard JWT path (email/password login) ──────────────────────────
+  const jwtToken = storeCookie.get("token")?.value
+  if (jwtToken) {
+    let decodedData: any = null
+    try {
+      decodedData = jwtDecode(jwtToken)
+    } catch {
+      // Not a valid JWT – fall through
+    }
 
     if (decodedData?.userId) {
       try {
         const res = await fetch(`${env.API_URL}/users/${decodedData.userId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${jwtToken}` },
           next: { tags: [`user-${decodedData.userId}`] },
         })
         const result = await res.json()
-        if (result.success) {
-          return result.data
-        }
+        if (result.success) return result.data
       } catch (error) {
         console.log("Error fetching full user data:", error)
       }
     }
 
-    return decodedData
-  } else {
-    return null
+    if (decodedData) return decodedData
   }
+
+  // ── 2. BetterAuth opaque session token path (Google OAuth) ───────────────
+  const betterAuthToken =
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+
+  if (betterAuthToken) {
+    try {
+      // Ask BetterAuth for the session; forward the cookie so it can validate it
+      const cookieHeader = storeCookie
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join("; ")
+
+      const res = await fetch(
+        `${env.API_URL?.replace("/api/v1", "")}/api/auth/get-session`,
+        {
+          headers: { Cookie: cookieHeader },
+          cache: "no-store",
+        }
+      )
+
+      if (res.ok) {
+        const session = await res.json()
+        // BetterAuth returns { user: { id, email, name, ... }, session: {...} }
+        if (session?.user) {
+          return {
+            userId: session.user.id,
+            email: session.user.email,
+            name: session.user.name,
+            role: session.user.role || "TRAVELER",
+            isVerified: session.user.emailVerified ?? true,
+            profilePhoto: session.user.image,
+          }
+        }
+      }
+    } catch (error) {
+      console.log("Error fetching BetterAuth session:", error)
+    }
+  }
+
+  return null
 }
 
 export const getSuggestedUsers = async () => {
   const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token =
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+
   try {
     const res = await fetch(`${env.API_URL}/users/suggestions`, {
       method: "GET",
@@ -168,7 +214,10 @@ export const getSuggestedUsers = async () => {
 export const updateUserProfile = async (userId: string, payload: any) => {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get("token")?.value
+    const token =
+      cookieStore.get("token")?.value ||
+      cookieStore.get("better-auth.session_token")?.value ||
+      cookieStore.get("__Secure-better-auth.session_token")?.value
     const res = await fetch(`${env.API_URL}/users/${userId}`, {
       method: "PATCH",
       headers: {
@@ -198,13 +247,50 @@ export const updateUserProfile = async (userId: string, payload: any) => {
 
 export const logoutUser = async () => {
   const storeCookie = await cookies()
+
+  // ── 1. BetterAuth server-side sign-out (Google OAuth users) ──────────────
+  const isBetterAuthUser =
+    !!storeCookie.get("better-auth.session_token")?.value ||
+    !!storeCookie.get("__Secure-better-auth.session_token")?.value
+
+  if (isBetterAuthUser) {
+    try {
+      const cookieHeader = storeCookie
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join("; ")
+
+      await fetch(
+        `${env.API_URL?.replace("/api/v1", "")}/api/auth/sign-out`,
+        {
+          method: "POST",
+          headers: {
+            Cookie: cookieHeader,
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        }
+      )
+    } catch (error) {
+      console.error("BetterAuth sign-out error:", error)
+    }
+  }
+
+  // ── 2. Delete all auth cookies (JWT + BetterAuth) ─────────────────────────
   storeCookie.delete("token")
   storeCookie.delete("refreshToken")
+  storeCookie.delete("better-auth.session_token")
+  storeCookie.delete("__Secure-better-auth.session_token")
+  storeCookie.delete("better-auth.session_data")
+  storeCookie.delete("__Secure-better-auth.session_data")
 }
 
 export const getExplorerProfile = async (userId: string) => {
   const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token =
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
   try {
     const res = await fetch(`${env.API_URL}/users/${userId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -218,3 +304,4 @@ export const getExplorerProfile = async (userId: string) => {
     return null
   }
 }
+

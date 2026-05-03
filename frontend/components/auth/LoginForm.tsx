@@ -80,19 +80,23 @@ export function LoginForm() {
     try {
       const { data, error } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/", // Redirect after login
+        callbackURL: "/",
       })
-      
+
       if (error) {
         console.error("BetterAuth Google Login Error:", error)
-        toast.error(error.message || "Failed to login with Google.", { id: toastId })
+        toast.error(error.message || "Failed to login with Google.", {
+          id: toastId,
+        })
         return
       }
 
       toast.success("Redirecting...", { id: toastId })
     } catch (err: any) {
       console.error("Catch Error during Google Login:", err)
-      toast.error(err.message || "Failed to login with Google.", { id: toastId })
+      toast.error(err.message || "Failed to login with Google.", {
+        id: toastId,
+      })
     }
   }
 

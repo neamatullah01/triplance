@@ -3,13 +3,21 @@
 import { cookies } from "next/headers"
 import { env } from "@/lib/env"
 
+const getToken = async () => {
+  const storeCookie = await cookies()
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  )
+}
+
 export async function createReview(payload: {
   bookingId: string
   rating: number
   comment: string
 }) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   const res = await fetch(`${env.API_URL}/reviews`, {
     method: "POST",
@@ -26,8 +34,7 @@ export async function createReview(payload: {
 }
 
 export async function deleteReview(reviewId: string) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   const res = await fetch(`${env.API_URL}/reviews/${reviewId}`, {
     method: "DELETE",
@@ -40,8 +47,7 @@ export async function deleteReview(reviewId: string) {
 }
 
 export async function getReviewByBookingId(bookingId: string) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   const res = await fetch(`${env.API_URL}/reviews/${bookingId}`, {
     method: "GET",
@@ -61,9 +67,7 @@ export async function getReviewByBookingId(bookingId: string) {
  * Returns only bookings that have been reviewed.
  */
 export async function getMyReviewedBookings() {
-  // Reuse the cookie+token once
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   if (!token) return []
 
   // 1. Fetch completed bookings

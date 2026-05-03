@@ -3,9 +3,17 @@
 import { cookies } from "next/headers"
 import { env } from "@/lib/env"
 
-export const getUserBookings = async (status?: string) => {
+const getToken = async () => {
   const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  return (
+    storeCookie.get("token")?.value ||
+    storeCookie.get("better-auth.session_token")?.value ||
+    storeCookie.get("__Secure-better-auth.session_token")?.value
+  )
+}
+
+export const getUserBookings = async (status?: string) => {
+  const token = await getToken()
   try {
     const searchParams = new URLSearchParams()
     if (status) searchParams.set("status", status)
@@ -27,11 +35,9 @@ export const getUserBookings = async (status?: string) => {
 }
 
 export async function getAgencyBookings(params: Record<string, any>) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
   const searchParams = new URLSearchParams()
 
-  // Dynamically append valid params
   Object.entries(params).forEach(([key, value]) => {
     if (value) searchParams.append(key, String(value))
   })
@@ -39,7 +45,7 @@ export async function getAgencyBookings(params: Record<string, any>) {
   const response = await fetch(
     `${env.API_URL}/bookings/agency?${searchParams.toString()}`,
     {
-      cache: "no-store", // Always fetch fresh booking data
+      cache: "no-store",
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -53,8 +59,7 @@ export async function getAgencyBookings(params: Record<string, any>) {
 }
 
 export async function createBooking(payload: any) {
-  const storeCookie = await cookies()
-  const token = storeCookie.get("token")?.value
+  const token = await getToken()
 
   const response = await fetch(`${env.API_URL}/bookings`, {
     method: "POST",
