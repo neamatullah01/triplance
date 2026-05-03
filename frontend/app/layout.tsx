@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import { Metadata } from "next";
+import { AiChatbot } from "@/components/ai/AiChatbot";
 
 
 const notoSerifHeading = Noto_Serif({subsets:['latin'],variable:'--font-heading'});
@@ -34,8 +35,10 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning={true}>
         <ThemeProvider>{children}</ThemeProvider>
+        <AiChatbot />
         <Toaster position="top-center" richColors />
       </body>
     </html>
   )
 }
+

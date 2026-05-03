@@ -22,6 +22,8 @@ const navLinks = [
   { name: "Explore", href: "/explore" },
   { name: "Bookings", href: "/bookings" },
   { name: "Agency", href: "/agency" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
 ]
 
 export function Navbar() {
@@ -33,7 +35,7 @@ export function Navbar() {
   const handleLogout = async () => {
     await logoutUser()
     setUser(null)
-    router.push("/login")
+    window.location.href = "/login"
   }
 
   useEffect(() => {

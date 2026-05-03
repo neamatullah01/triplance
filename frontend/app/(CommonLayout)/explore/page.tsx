@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, MapPin, SearchX } from "lucide-react";
 import { PackageList } from "@/components/explore/PackageList";
 import { SearchBar } from "@/components/explore/SearchBar";
 import { getPackages } from "@/services/package.service";
+import { AiRecommendations } from "@/components/ai/AiRecommendations";
 
 export const metadata = {
   title: "Explore Packages | Triplance",
@@ -55,6 +56,9 @@ export default async function ExplorePage({
           </div>
         </div>
       </div>
+
+      {/* AI Recommendations */}
+      <AiRecommendations />
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10">

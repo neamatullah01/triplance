@@ -276,13 +276,37 @@ export const logoutUser = async () => {
     }
   }
 
-  // ── 2. Delete all auth cookies (JWT + BetterAuth) ─────────────────────────
-  storeCookie.delete("token")
-  storeCookie.delete("refreshToken")
-  storeCookie.delete("better-auth.session_token")
-  storeCookie.delete("__Secure-better-auth.session_token")
-  storeCookie.delete("better-auth.session_data")
-  storeCookie.delete("__Secure-better-auth.session_data")
+  // ── 2. Delete all auth cookies ────────────────────────────────────────────
+  // JWT cookies (standard attributes)
+  try { storeCookie.delete("token") } catch {}
+  try { storeCookie.delete("refreshToken") } catch {}
+
+  // BetterAuth cookies – must match the attributes the backend originally set.
+  // In production with SameSite=None + Secure + Partitioned, we must pass
+  // those same attributes when deleting or the browser won't clear them.
+  const betterAuthCookieNames = [
+    "better-auth.session_token",
+    "__Secure-better-auth.session_token",
+    "better-auth.session_data",
+    "__Secure-better-auth.session_data",
+  ]
+
+  for (const name of betterAuthCookieNames) {
+    try {
+      storeCookie.set({
+        name,
+        value: "",
+        maxAge: 0,
+        path: "/",
+        secure: true,
+        sameSite: "none" as const,
+        httpOnly: true,
+      })
+    } catch {
+      // Cookie may not exist or attributes may mismatch — that's OK
+      try { storeCookie.delete(name) } catch {}
+    }
+  }
 }
 
 export const getExplorerProfile = async (userId: string) => {

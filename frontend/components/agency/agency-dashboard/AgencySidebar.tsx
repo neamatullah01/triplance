@@ -45,7 +45,7 @@ export function AgencySidebar({ isMobileOpen, onClose }: AgencySidebarProps) {
     try {
       await logoutUser()
       toast.success("Logged out successfully")
-      router.push("/login")
+      window.location.href = "/login"
     } catch (error) {
       toast.error("Failed to logout")
     }

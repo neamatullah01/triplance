@@ -17,7 +17,7 @@ export default function AgencyApprovalPage() {
   const handleLogoutAndLogin = async () => {
     try {
       await logoutUser()
-      router.push("/login")
+      window.location.href = "/login"
     } catch (error) {
       toast.error("Failed to logout")
     }

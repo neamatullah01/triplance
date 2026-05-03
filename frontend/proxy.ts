@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server"
 import { getUser } from "@/services/auth.service"
 
 // Define paths that unauthenticated users are allowed to see
-const publicPaths = ["/login", "/register"]
+const publicPaths = ["/login", "/register", "/about", "/contact"]
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
