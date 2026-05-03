@@ -9,6 +9,7 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { loginUser } from "@/services/auth.service" // <-- IMPORT THE HELPER
 import { getRedirectPathByRole } from "@/lib/role-redirect"
+import { authClient } from "@/lib/auth-client"
 
 const loginSchema = z.object({
   email: z
@@ -71,6 +72,27 @@ export function LoginForm() {
       window.location.href = redirectPath || "/"
     } catch {
       toast.error("Something went wrong.", { id: toastId })
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    const toastId = toast.loading("Redirecting to Google...")
+    try {
+      const { data, error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/", // Redirect after login
+      })
+      
+      if (error) {
+        console.error("BetterAuth Google Login Error:", error)
+        toast.error(error.message || "Failed to login with Google.", { id: toastId })
+        return
+      }
+
+      toast.success("Redirecting...", { id: toastId })
+    } catch (err: any) {
+      console.error("Catch Error during Google Login:", err)
+      toast.error(err.message || "Failed to login with Google.", { id: toastId })
     }
   }
 
@@ -308,7 +330,12 @@ export function LoginForm() {
 
         {/* Social Buttons */}
         <div className="flex items-center gap-4">
-          <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50">
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isSubmitting}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
@@ -328,12 +355,6 @@ export function LoginForm() {
               />
             </svg>
             Google
-          </button>
-          <button className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50">
-            <svg className="h-5 w-5" fill="#1877F2" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-            Facebook
           </button>
         </div>
       </div>
