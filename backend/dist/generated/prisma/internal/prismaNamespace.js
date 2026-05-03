@@ -48,7 +48,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineExtension = exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.JsonNullValueInput = exports.SortOrder = exports.ReviewScalarFieldEnum = exports.PaymentScalarFieldEnum = exports.BookingScalarFieldEnum = exports.FollowScalarFieldEnum = exports.LikeScalarFieldEnum = exports.CommentScalarFieldEnum = exports.PostScalarFieldEnum = exports.PackageScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.prismaVersion = exports.getExtensionContext = exports.Decimal = exports.Sql = exports.raw = exports.join = exports.empty = exports.sql = exports.PrismaClientValidationError = exports.PrismaClientInitializationError = exports.PrismaClientRustPanicError = exports.PrismaClientUnknownRequestError = exports.PrismaClientKnownRequestError = void 0;
+exports.defineExtension = exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.JsonNullValueInput = exports.SortOrder = exports.VerificationScalarFieldEnum = exports.AccountScalarFieldEnum = exports.SessionScalarFieldEnum = exports.ReviewScalarFieldEnum = exports.PaymentScalarFieldEnum = exports.BookingScalarFieldEnum = exports.FollowScalarFieldEnum = exports.LikeScalarFieldEnum = exports.CommentScalarFieldEnum = exports.PostScalarFieldEnum = exports.PackageScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.prismaVersion = exports.getExtensionContext = exports.Decimal = exports.Sql = exports.raw = exports.join = exports.empty = exports.sql = exports.PrismaClientValidationError = exports.PrismaClientInitializationError = exports.PrismaClientRustPanicError = exports.PrismaClientUnknownRequestError = exports.PrismaClientKnownRequestError = void 0;
 const runtime = __importStar(require("@prisma/client/runtime/client"));
 /**
  * Prisma Errors
@@ -111,7 +111,10 @@ exports.ModelName = {
     Follow: 'Follow',
     Booking: 'Booking',
     Payment: 'Payment',
-    Review: 'Review'
+    Review: 'Review',
+    Session: 'Session',
+    Account: 'Account',
+    Verification: 'Verification'
 };
 /**
  * Enums
@@ -131,6 +134,8 @@ exports.UserScalarFieldEnum = {
     profileImage: 'profileImage',
     coverImage: 'coverImage',
     bio: 'bio',
+    emailVerified: 'emailVerified',
+    image: 'image',
     agencyName: 'agencyName',
     website: 'website',
     phone: 'phone',
@@ -226,6 +231,39 @@ exports.ReviewScalarFieldEnum = {
     agencyId: 'agencyId',
     travelerId: 'travelerId',
     bookingId: 'bookingId'
+};
+exports.SessionScalarFieldEnum = {
+    id: 'id',
+    expiresAt: 'expiresAt',
+    token: 'token',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    ipAddress: 'ipAddress',
+    userAgent: 'userAgent',
+    userId: 'userId'
+};
+exports.AccountScalarFieldEnum = {
+    id: 'id',
+    accountId: 'accountId',
+    providerId: 'providerId',
+    userId: 'userId',
+    accessToken: 'accessToken',
+    refreshToken: 'refreshToken',
+    idToken: 'idToken',
+    accessTokenExpiresAt: 'accessTokenExpiresAt',
+    refreshTokenExpiresAt: 'refreshTokenExpiresAt',
+    scope: 'scope',
+    password: 'password',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.VerificationScalarFieldEnum = {
+    id: 'id',
+    identifier: 'identifier',
+    value: 'value',
+    expiresAt: 'expiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
 };
 exports.SortOrder = {
     asc: 'asc',

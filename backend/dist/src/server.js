@@ -19,8 +19,8 @@ async function main() {
     }
 }
 main();
-process.on('unhandledRejection', (err) => {
-    console.log('👿 unhandledRejection is detected, shutting down ...', err);
+process.on("unhandledRejection", (err) => {
+    console.log("👿 unhandledRejection is detected, shutting down ...", err);
     prisma_1.prisma.$disconnect();
     if (server) {
         server.close(() => {
@@ -31,17 +31,17 @@ process.on('unhandledRejection', (err) => {
         process.exit(1);
     }
 });
-process.on('uncaughtException', (err) => {
-    console.log('👿 uncaughtException is detected, shutting down ...', err);
+process.on("uncaughtException", (err) => {
+    console.log("👿 uncaughtException is detected, shutting down ...", err);
     prisma_1.prisma.$disconnect();
     process.exit(1);
 });
-process.on('SIGTERM', () => {
-    console.log('💤 SIGTERM received, shutting down gracefully ...');
+process.on("SIGTERM", () => {
+    console.log("💤 SIGTERM received, shutting down gracefully ...");
     prisma_1.prisma.$disconnect();
     if (server) {
         server.close(() => {
-            console.log('Server closed gracefully');
+            console.log("Server closed gracefully");
             process.exit(0);
         });
     }
@@ -49,12 +49,12 @@ process.on('SIGTERM', () => {
         process.exit(0);
     }
 });
-process.on('SIGINT', () => {
-    console.log('💤 SIGINT received, shutting down gracefully ...');
+process.on("SIGINT", () => {
+    console.log("💤 SIGINT received, shutting down gracefully ...");
     prisma_1.prisma.$disconnect();
     if (server) {
         server.close(() => {
-            console.log('Server closed gracefully');
+            console.log("Server closed gracefully");
             process.exit(0);
         });
     }

@@ -56,6 +56,9 @@ const loginUser = async (payload) => {
     if (user.isBanned) {
         throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'This user is banned!');
     }
+    if (!user.password) {
+        throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Please login with your social account');
+    }
     const isPasswordMatched = await bcrypt_1.default.compare(payload.password, user.password);
     if (!isPasswordMatched) {
         throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Invalid password');

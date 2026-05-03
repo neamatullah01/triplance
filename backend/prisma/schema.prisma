@@ -35,11 +35,15 @@ model User {
   id              String    @id @default(uuid())
   name            String    // Used for "Your Full Name" (The account owner)
   email           String    @unique
-  password        String    
+  password        String?
   role            Role      @default(TRAVELER)
   profileImage    String?
   coverImage      String?
   bio             String?   // Maps perfectly to "Agency Bio (optional)"
+  
+  // Better Auth fields
+  emailVerified   Boolean   @default(false)
+  image           String?
   
   agencyName      String?   // Maps to "Agency Name"
   website         String?   // Maps to "Website (optional)"
@@ -66,6 +70,8 @@ model User {
   likes           Like[]
   comments        Comment[]
   payments        Payment[]
+  sessions        Session[]
+  accounts        Account[]
 
   @@map("users")
 }
@@ -221,4 +227,49 @@ model Review {
   booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
 }

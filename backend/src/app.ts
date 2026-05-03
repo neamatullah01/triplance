@@ -5,13 +5,19 @@ import globalErrorHandler from "./middlewares/globalErrorHandler";
 import notFound from "./middlewares/notFound";
 import router from "./routes";
 import { paymentWebhookController } from "./modules/Payment/payment.controller";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./lib/auth";
 
 const app: Application = express();
 
 // parsers
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL as string, "http://localhost:3000"],
+    origin: [
+      process.env.FRONTEND_URL as string,
+      "https://triplanceworld.vercel.app",
+      "http://localhost:3000",
+    ],
     credentials: true, // MUST be true to accept the HTTP-only cookie!
   }),
 );
@@ -23,6 +29,9 @@ app.post(
   express.raw({ type: "application/json" }),
   paymentWebhookController,
 );
+
+// Better Auth
+app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));

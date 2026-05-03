@@ -281,6 +281,7 @@ const getSuggestedUsers = async (authUser, query) => {
                 id: true,
                 name: true,
                 profileImage: true,
+                coverImage: true,
                 bio: true,
                 role: true,
                 isVerified: true,

@@ -76,6 +76,10 @@ const loginUser = async (payload: TLoginUser) => {
     throw new AppError(httpStatus.FORBIDDEN, 'This user is banned!');
   }
 
+  if (!user.password) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Please login with your social account');
+  }
+
   const isPasswordMatched = await bcrypt.compare(payload.password!, user.password);
 
   if (!isPasswordMatched) {
