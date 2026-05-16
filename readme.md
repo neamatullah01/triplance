@@ -1,73 +1,22 @@
-# 🌍 Triplance — Travel Social & Booking Platform
+# 🌍 Triplance — Where Travel Meets Community
 
-Triplance is a full-stack travel platform that combines **social networking** with **travel package booking**. Travelers can discover trips, follow agencies, share stories, and book packages — all in one place. Agencies can list packages, manage bookings, and grow their audience through a built-in social feed.
-
----
-
-## 🚩 The Problem
-
-Planning travel is fragmented. Travelers jump between social media for inspiration, separate websites to find packages, and third-party tools to make payments. There's no single platform where they can discover agencies, follow their content, book a trip, and leave a verified review all in a trusted, moderated environment.
-
-**Triplance solves this** by combining a social feed, a travel marketplace, and a secure booking + payment system into one unified platform.
+> A full-stack platform that unifies travel discovery, social storytelling, and package booking into one seamless experience.
 
 ---
 
-## ✨ Features
+## 🚩 Problem Statement
 
-### 👤 User Roles
+Planning travel is fragmented. Travelers jump between social media for inspiration, separate websites to find packages, and third-party tools to make payments. There's no single place to discover agencies, follow their content, book a trip, and leave a verified review — all within a trusted, moderated environment.
 
-- **Traveler** — Browse packages, book trips, post stories, follow agencies
-- **Agency** — List and manage travel packages, track bookings and revenue, post content
-- **Admin** — Approve agencies, manage users, moderate content, view platform stats
+---
 
-### 🔐 Authentication
+## 💡 Solution Overview
 
-- JWT-based auth with access & refresh tokens (HTTP-only cookies)
-- Role-based access control across all routes
-- Agency accounts require admin approval before going live
+Triplance brings it all together. It combines a **social feed**, a **travel marketplace**, and a **secure booking + payment system** into one unified platform.
 
-### 📸 Social Feed
-
-- Post travel stories with images, captions, and tags
-- Like and comment on posts
-- Follow other travelers or agencies to personalize your feed
-- Paginated feed sorted by recency
-
-### 📦 Package Management
-
-- Agencies can create, update, and delete travel packages
-- Package details: title, description, price, capacity, itinerary, amenities, images, destination, available dates
-- Travelers can browse and filter packages by destination, price range, and date
-
-### 📅 Booking System
-
-- Travelers pick a package, select a date/slot, and book
-- Real-time capacity check — booking is rejected if no slots are available
-- Slot count auto-decrements on booking and restores on cancellation
-- Booking statuses: `pending` → `confirmed` → `completed` / `cancelled`
-
-### 💳 Payment Integration
-
-- **Stripe** payment gateway for secure checkout
-- Payment statuses: `unpaid` / `paid` / `refunded`
-- Webhook support for real-time payment confirmation
-- Travelers can view receipts; agencies can track revenue per package
-- Admin can process refunds
-
-### ⭐ Review System
-
-- Travelers can rate and review a package only after a booking is `completed`
-- One review per booking (no duplicates)
-- 1–5 star rating with written feedback
-- Agency average rating auto-recalculates after every new review
-
-### 🛡️ Admin Dashboard
-
-- Platform-wide stats: total bookings, active users, revenue, new agencies
-- Approve or reject agency registrations
-- Ban/suspend users for policy violations
-- Remove inappropriate posts or fraudulent reviews
-- Handle refund requests and disputes
+- Travelers discover and book trips, follow agencies, and share stories
+- Agencies list packages, track bookings and revenue, and grow their audience
+- Admins keep the platform safe, approved, and well-moderated
 
 ---
 
@@ -85,31 +34,109 @@ Planning travel is fragmented. Travelers jump between social media for inspirati
 
 ---
 
-## 🚀 Getting Started
+## ✨ Key Features
+
+### 👤 User Roles
+- **Traveler** — Browse packages, book trips, post stories, follow agencies
+- **Agency** — List and manage travel packages, track bookings and revenue, post content
+- **Admin** — Approve agencies, manage users, moderate content, view platform stats
+
+### 🔐 Authentication
+- JWT-based auth with access & refresh tokens stored in HTTP-only cookies
+- Role-based access control across all routes
+- Agency accounts require admin approval before going live
+
+### 📸 Social Feed
+- Post travel stories with images, captions, and tags
+- Like, comment, and follow to personalize your feed
+- Paginated feed sorted by recency
+
+### 📦 Package Management
+- Agencies can create, update, and delete travel packages
+- Rich package details: title, description, price, capacity, itinerary, amenities, images, destination, and available dates
+- Travelers can filter packages by destination, price range, and date
+
+### 📅 Booking System
+- Select a package, pick a date/slot, and book instantly
+- Real-time capacity check — rejected automatically if no slots remain
+- Slot count auto-adjusts on booking and cancellation
+- Status flow: `pending` → `confirmed` → `completed` / `cancelled`
+
+### 💳 Payment Integration
+- **Stripe** for secure checkout
+- Payment statuses: `unpaid` / `paid` / `refunded`
+- Webhook support for real-time payment confirmation
+- Travelers view receipts; agencies track per-package revenue; admin handles refunds
+
+### ⭐ Review System
+- Only available after a booking is `completed` — no fake reviews
+- One review per booking, 1–5 stars with written feedback
+- Agency average rating auto-recalculates on every new review
+
+### 🛡️ Admin Dashboard
+- Platform-wide stats: bookings, active users, revenue, new agencies
+- Approve or reject agency registrations
+- Ban/suspend users for policy violations
+- Remove inappropriate posts or fraudulent reviews
+- Handle refund requests and disputes
+
+---
+
+## 🚀 Setup Instructions
 
 ### Prerequisites
-
 - Node.js v18+
 - PostgreSQL database
-- Stripe account (for payments)
-- Cloudinary or AWS S3 account (for image uploads)
+- Stripe account
+- Cloudinary or AWS S3 account
 
 ### 1. Clone the Repository
-
 ```bash
 git clone https://github.com/your-username/triplance.git
 cd triplance
 ```
 
 ### 2. Install Dependencies
-
 ```bash
 npm install
 ```
 
 ### 3. Configure Environment Variables
+See the [Environment Variables](#-environment-variables) section below, then create a `.env` file in the root directory.
 
-Create a `.env` file in the root directory:
+### 4. Set Up the Database
+```bash
+npx prisma generate
+npx prisma migrate dev
+```
+
+### 5. Run the Development Server
+```bash
+npm run dev
+```
+
+The API will be running at `http://localhost:5000`.
+
+### 6. Deployment
+```bash
+# Build and start for production
+npm run build
+npm start
+```
+
+Additional deployment steps:
+1. Set `NODE_ENV=production`
+2. Configure your PostgreSQL instance (Neon, Supabase, or self-hosted)
+3. Run `npx prisma generate && npx prisma migrate deploy`
+4. Set all environment variables on your hosting platform
+5. Register your Stripe webhook endpoint
+6. Ensure CORS is restricted to your frontend domain
+
+---
+
+## 🔧 Environment Variables
+
+Create a `.env` file in the root directory with the following:
 
 ```env
 NODE_ENV=development
@@ -135,35 +162,11 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### 4. Set Up the Database
-
-```bash
-npx prisma generate
-npx prisma migrate dev
-```
-
-### 5. Run the Development Server
-
-```bash
-npm run dev
-```
-
-The API will be running at `http://localhost:5000`
-
 ---
 
-## 🔑 Test Credentials
+## 📡 API & Architecture
 
-| Role   | Email            | Password  |
-| ------ | ---------------- | --------- |
-| Admin  | admin@gmail.com  | admin123  |
-| Agency | agency@gmail.com | agency123 |
-
-> **Note:** The agency account must be approved by the admin before it can publish packages. So if you create new account, log in as admin first to approve it.
-
----
-
-## 📡 API Overview
+### API Endpoints
 
 | Module   | Base Endpoint      |
 | -------- | ------------------ |
@@ -178,8 +181,7 @@ The API will be running at `http://localhost:5000`
 
 All list endpoints support `page`, `limit`, `sortBy`, and `sortOrder` query params.
 
-### Response Format
-
+### Standard Response Format
 ```json
 {
   "success": true,
@@ -189,10 +191,7 @@ All list endpoints support `page`, `limit`, `sortBy`, and `sortOrder` query para
 }
 ```
 
----
-
-## 📁 Project Structure
-
+### Project Structure
 ```
 src/
 ├── config/           # Environment config
@@ -219,20 +218,13 @@ src/
 
 ---
 
-## 🚢 Deployment
+## 🌐 Live Demo & Credentials
 
-1. Set `NODE_ENV=production`
-2. Configure your PostgreSQL instance (Neon, Supabase, or self-hosted)
-3. Run migrations: `npx prisma generate && npx prisma migrate deploy`
-4. Set all environment variables on your hosting platform
-5. Register your Stripe webhook endpoint
-6. Build and start:
+**Live URL:** [triplanceworld.vercel.app](https://triplanceworld.vercel.app/)
 
-```bash
-npm run build
-npm start
-```
+| Role   | Email              | Password   |
+| ------ | ------------------ | ---------- |
+| Admin  | admin@gmail.com    | admin123   |
+| Agency | agency@gmail.com   | agency123  |
 
-> Make sure CORS is configured to allow only your frontend domain in production.
-
----
+> **Note:** Agency accounts must be approved by an admin before they can publish packages. If you register a new agency account, log in as admin first to approve it.
